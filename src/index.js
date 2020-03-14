@@ -89,7 +89,7 @@ const DEFAULT_STORAGE_OPTIONS = {
 
 // ========================== multistate CLASS ==========================
 
-class Multistat {
+class Multistate {
     constructor(state, options = {}) {
         this.context = createContext(null);
         this.state = state;
@@ -299,5 +299,5 @@ class Multistat {
     }
 }
 
-export default multistate;
+export default Multistate;
 

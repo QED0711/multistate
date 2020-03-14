@@ -172,11 +172,11 @@ var DEFAULT_STORAGE_OPTIONS = {
   unmountBehavior: "all"
 }; // ========================== multistate CLASS ==========================
 
-var Multistat = /*#__PURE__*/function () {
-  function Multistat(state) {
+var Multistate = /*#__PURE__*/function () {
+  function Multistate(state) {
     var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
-    _classCallCheck(this, Multistat);
+    _classCallCheck(this, Multistate);
 
     this.context = (0, _react.createContext)(null);
     this.state = state;
@@ -196,7 +196,7 @@ var Multistat = /*#__PURE__*/function () {
     this.bindToLocalStorage = false;
   }
 
-  _createClass(Multistat, [{
+  _createClass(Multistate, [{
     key: "addCustomSetters",
     value: function addCustomSetters(setters) {
       this.setters = setters;
@@ -392,8 +392,8 @@ var Multistat = /*#__PURE__*/function () {
     }
   }]);
 
-  return Multistat;
+  return Multistate;
 }();
 
-var _default = multistate;
+var _default = Multistate;
 exports["default"] = _default;

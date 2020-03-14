@@ -1,0 +1,26 @@
+{
+  "name": "multistate",
+  "version": "1.0.0",
+  "description": "A React state managment library built on the Context API",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "./node_modules/.bin/babel src --out-file index.js"
+  },
+  "peerDependencies": {
+    "react": "^16.6.1",
+    "react-dom": "^16.6.3"
+  },
+  "keywords": [
+    "React",
+    "State-Management"
+  ],
+  "author": "Quinn Dizon",
+  "license": "ISC",
+  "dependencies": {
+    "@babel/cli": "^7.8.4",
+    "@babel/core": "^7.8.7",
+    "@babel/preset-env": "^7.8.7",
+    "@babel/preset-react": "^7.8.3"
+  }
+}

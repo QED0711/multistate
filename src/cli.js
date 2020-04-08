@@ -79,9 +79,60 @@ const argParser = () => {
 }
 
 /* 
-::::::::::::
-:: PROMPT ::
-::::::::::::
+::::::::::::::::::::::::
+:: WRITE ProviderFile ::
+::::::::::::::::::::::::
+*/
+
+const writeProvider = (name, supportFiles) => {
+    let supportImports = ""
+    let sf;
+    for(let sfKey of Object.keys(supportFiles)){
+        sf = supportFiles[sfKey]
+        if(sf) supportImports += `const ${sfKey} = require('./${sf}')\n`
+    }
+    
+    // console.log(supportImports)
+
+    const fileContents = `
+const Multistate = require('multistate')
+
+${supportImports}
+
+${supportFiles.state ? `const ${name} = new Multistate(state)` : `const ${name} = new Multistate({})`}
+
+${supportFiles.setters ? `${name}.addCustomSetters(setters)`: ""}
+${supportFiles.methods ? `${name}.addMethods(methods)`: ""}
+${supportFiles.reducers ? `${name}.addReducers(reducers)`: ""}
+${supportFiles.constants ? `${name}.addConstants(constants)`: ""}
+
+module.exports = {
+    ${name}Context: ${name}.context,
+    ${capName(name)}Provider: ${name}.createProvider()
+}
+    `
+    // create state directory if it doesn't exist
+    !fs.existsSync("./src/state/") && fs.mkdirSync("./src/state")
+
+    // create/overwrite previous directory of named resource
+    fs.mkdirSync(`./src/state/${name}`)
+
+    // create provider file
+    fs.writeFileSync(`./src/state/${name}/${name}Provider.js`, fileContents)
+}
+
+
+
+
+
+
+
+
+
+/* 
+:::::::::::::
+:: HELPERS ::
+:::::::::::::
 */
 const prompt = (question, cb) => {
     return new Promise(resolve => {
@@ -90,6 +141,12 @@ const prompt = (question, cb) => {
             rl.close()
         })
     })
+}
+
+const capName = (name) => {
+    let newName =  name.split("")
+    newName[0] = newName[0].toUpperCase()
+    return newName.join("")
 }
 
 
@@ -104,6 +161,7 @@ const run = async () => {
     let name = argString.match(nameSearch)
 
     name = name ? name[0].split("=")[1] : await prompt("What would you like to name this state resource: ", name => name)
+    rl.close()
 
     console.log("NAME:", name)
 
@@ -111,9 +169,11 @@ const run = async () => {
     let filesToMake = argParser()
     console.log(filesToMake)
 
+    // 3. write the main provider file
+    writeProvider(name, filesToMake)
+
     console.log("END")
 
-    rl.close()
 }
 
 run()

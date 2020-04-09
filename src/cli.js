@@ -79,9 +79,9 @@ const argParser = () => {
 }
 
 /* 
-::::::::::::::::::::::::
-:: WRITE ProviderFile ::
-::::::::::::::::::::::::
+::::::::::::::::::
+:: FILE WRITERS ::
+::::::::::::::::::
 */
 
 const writeProvider = (name, supportFiles) => {
@@ -89,7 +89,7 @@ const writeProvider = (name, supportFiles) => {
     let sf;
     for(let sfKey of Object.keys(supportFiles)){
         sf = supportFiles[sfKey]
-        if(sf) supportImports += `const ${sfKey} = require('./${sf}')\n`
+        if(sf) supportImports += `const ${sf} = require('./${sf}')\n`
     }
     
     // console.log(supportImports)
@@ -101,10 +101,10 @@ ${supportImports}
 
 ${supportFiles.state ? `const ${name} = new Multistate(state)` : `const ${name} = new Multistate({})`}
 
-${supportFiles.setters ? `${name}.addCustomSetters(setters)`: ""}
-${supportFiles.methods ? `${name}.addMethods(methods)`: ""}
-${supportFiles.reducers ? `${name}.addReducers(reducers)`: ""}
-${supportFiles.constants ? `${name}.addConstants(constants)`: ""}
+${supportFiles.setters ? `${name}.addCustomSetters(${supportFiles.setters})`: ""}
+${supportFiles.methods ? `${name}.addMethods(${supportFiles.methods})`: ""}
+${supportFiles.reducers ? `${name}.addReducers(${supportFiles.reducers})`: ""}
+${supportFiles.constants ? `${name}.addConstants(${supportFiles.constants})`: ""}
 
 module.exports = {
     ${name}Context: ${name}.context,
@@ -119,10 +119,25 @@ module.exports = {
 
     // create provider file
     fs.writeFileSync(`./src/state/${name}/${name}Provider.js`, fileContents)
+    console.log(`created ./src/state/${name}/${name}Provider.js`)
 }
 
 
+const writeSupportFiles = (name, files) => {
+    
+    
+    let sf,
+        fileContents
 
+    for (let sfKey of Object.keys(files)){
+        sf = files[sfKey]
+        if(sf){
+            fileContents = genSupportFileTemplate(sf, sfKey)
+            fs.writeFileSync(`./src/state/${name}/${sf}.js`, fileContents)
+            console.log(`created ./src/state/${name}/${sf}.js`)
+        }
+    }
+}
 
 
 
@@ -141,6 +156,18 @@ const prompt = (question, cb) => {
             rl.close()
         })
     })
+}
+
+const genSupportFileTemplate = (supportFile, fileType) => {
+    return `
+const ${supportFile} = {
+
+    // your ${fileType} here...
+
+}
+
+module.exports = ${supportFile}
+    `
 }
 
 const capName = (name) => {
@@ -163,20 +190,18 @@ const run = async () => {
     name = name ? name[0].split("=")[1] : await prompt("What would you like to name this state resource: ", name => name)
     rl.close()
 
-    console.log("NAME:", name)
+    console.log("State Resource: ", name)
 
     // 2. find any flags or keyword arguments in the argument string
     let filesToMake = argParser()
-    console.log(filesToMake)
+    // console.log(filesToMake)
 
     // 3. write the main provider file
     writeProvider(name, filesToMake)
 
-    console.log("END")
+    // 4. write support files
+    writeSupportFiles(name, filesToMake)
 
 }
 
 run()
-
-
-// console.log("after readline")

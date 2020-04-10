@@ -47,10 +47,10 @@ const argParser = () => {
             .split("")
             .map(f => FLAG_MAP[f])
         :
-        null;
+        [];
 
     // 2. search for keyword arguments
-    const keywords = argString.match(keywordSearch)
+    const keywords = argString.match(keywordSearch) || []
 
     const foundKeywords = []
     const foundKeywordValues = {}
@@ -68,13 +68,7 @@ const argParser = () => {
     allFlags.forEach(f => FILES[f] = f ? foundKeywordValues[f] || f : null)
 
     // 5. return results
-    // return the FILES object if any of the files are non-nulls
-    for (let key of Object.keys(FILES)) {
-        if (FILES[key]) return FILES
-    }
-
-    // return null if no arguments passed
-    return null
+    return FILES
 
 }
 
@@ -149,13 +143,8 @@ const writeSupportFiles = (name, files) => {
 :: HELPERS ::
 :::::::::::::
 */
-const prompt = (question, cb) => {
-    return new Promise(resolve => {
-        rl.question(question, (input) => {
-            resolve(cb(input))
-            rl.close()
-        })
-    })
+const prompt = (question) => {
+    return new Promise(resolve => rl.question(question, input => resolve(input)))
 }
 
 const genSupportFileTemplate = (supportFile, fileType) => {
@@ -176,6 +165,13 @@ const capName = (name) => {
     return newName.join("")
 }
 
+const noFiles = (files) => {
+    for(let file of Object.keys(files)){
+        if(files[file]) return false
+    }
+    return true
+}
+
 
 /* 
 :::::::::::::::::::::
@@ -187,15 +183,27 @@ const run = async () => {
     // 1. get the name of the state resource from the user (either from the --name flag or from prompt)
     let name = argString.match(nameSearch)
 
-    name = name ? name[0].split("=")[1] : await prompt("What would you like to name this state resource: ", name => name)
-    rl.close()
-
+    name = name ? name[0].split("=")[1] : await prompt("What would you like to name this state resource: ")
+    
     console.log("State Resource: ", name)
 
-    // 2. find any flags or keyword arguments in the argument string
+    // 2a. find any flags or keyword arguments in the argument string
     let filesToMake = argParser()
-    // console.log(filesToMake)
-
+    
+    // 2b. If no arguments given, walk through assigning values
+    if(noFiles(filesToMake)){
+        console.log("\n=== No arguments detected ===")
+        console.log("Initializing Setup Wizard")
+        console.log("\nFor each support file listed, provide a name. If you want the default name, just press ENTER. If you do not want to include the support file, type 'n'.\n")
+        let currentFile;
+        for(let file of Object.keys(filesToMake)){
+            currentFile = await prompt(file + ": ")
+            filesToMake[file] = currentFile.toLowerCase() === "n" ? null : currentFile.length ? currentFile : file
+        }
+    }
+    
+    rl.close()
+    
     // 3. write the main provider file
     writeProvider(name, filesToMake)
 

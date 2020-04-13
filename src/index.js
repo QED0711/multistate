@@ -1,4 +1,7 @@
-import React, { createContext, Component } from "react";
+// import React, { createContext, Component } from "react";
+
+const React = require('react')
+const { createContext, Component } = React
 
 // ========================== HELPER METHODS ==========================
 
@@ -299,5 +302,5 @@ class Multistate {
     }
 }
 
-export default Multistate;
+module.exports = Multistate;
 

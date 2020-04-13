@@ -93,7 +93,7 @@ const Multistate = require('multistate')
 
 ${supportImports}
 
-${supportFiles.state ? `const ${name} = new Multistate(state)` : `const ${name} = new Multistate({})`}
+${supportFiles.state ? `const ${name} = new Multistate(${supportFiles.state})` : `const ${name} = new Multistate({})`}
 
 ${supportFiles.setters ? `${name}.addCustomSetters(${supportFiles.setters})`: ""}
 ${supportFiles.methods ? `${name}.addMethods(${supportFiles.methods})`: ""}

@@ -123,6 +123,10 @@ class Multistate {
         this.setters = setters
     }
 
+    ignoreSetters(settersArr){
+        this.ignoredSetters = settersArr || []
+    }
+
     addReducers(reducers) {
         this.reducers = reducers
 

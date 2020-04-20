@@ -140,6 +140,10 @@ class Multistate {
         this.methods = methods;
     }
 
+    rename(nameMap){
+        this.renameMap = nameMap || {}
+    }
+
     connectToLocalStorage(options = {}) {
         this.bindToLocalStorage = true
         this.storageOptions = { ...DEFAULT_STORAGE_OPTIONS, ...options }
@@ -163,6 +167,7 @@ class Multistate {
         let reducers = this.reducers
         let methods = this.methods;
         let ignoredSetters = this.ignoredSetters;
+        let renameMap = this.renameMap || {}
 
         const bindToLocalStorage = this.bindToLocalStorage;
         const storageOptions = this.storageOptions
@@ -292,7 +297,16 @@ class Multistate {
                     methods: this.methods
                 }
 
+                // add reducers with dispatchers
                 if (Object.keys(reducers).length) value.reducers = this.reducersWithDispatchers
+
+                // rename value keys to user specifications
+                for(let key of Object.keys(renameMap)){
+                    if(value[key]){
+                        value[renameMap[key]] = value[key];
+                        delete value[key]
+                    }
+                }
 
                 return (
                     <Context.Provider value={value}>

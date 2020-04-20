@@ -216,6 +216,11 @@ var Multistate = /*#__PURE__*/function () {
       this.methods = methods;
     }
   }, {
+    key: "rename",
+    value: function rename(nameMap) {
+      this.renameMap = nameMap || {};
+    }
+  }, {
     key: "connectToLocalStorage",
     value: function connectToLocalStorage() {
       var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -245,6 +250,7 @@ var Multistate = /*#__PURE__*/function () {
       var reducers = this.reducers;
       var methods = this.methods;
       var ignoredSetters = this.ignoredSetters;
+      var renameMap = this.renameMap || {};
       var bindToLocalStorage = this.bindToLocalStorage;
       var storageOptions = this.storageOptions;
       var setters; // initialize local storage with state
@@ -376,8 +382,19 @@ var Multistate = /*#__PURE__*/function () {
               setters: this.setters,
               constants: constants,
               methods: this.methods
-            };
-            if (Object.keys(reducers).length) value.reducers = this.reducersWithDispatchers;
+            }; // add reducers with dispatchers
+
+            if (Object.keys(reducers).length) value.reducers = this.reducersWithDispatchers; // rename value keys to user specifications
+
+            for (var _i2 = 0, _Object$keys2 = Object.keys(renameMap); _i2 < _Object$keys2.length; _i2++) {
+              var _key = _Object$keys2[_i2];
+
+              if (value[_key]) {
+                value[renameMap[_key]] = value[_key];
+                delete value[_key];
+              }
+            }
+
             return React.createElement(Context.Provider, {
               value: value
             }, this.props.children);

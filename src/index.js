@@ -32,7 +32,7 @@ const formatStateName = (name) => {
     return "set" + name.join("");
 }
 
-const createStateSetters = (state, bindToLocalStorage, storageName=null, setters={}) => {
+const createStateSetters = (state, ignoredSetters=[], setters={}) => {
     /* 
     iterates through a provided state object, and takes each key name (state value) and creates a setter method for that value. 
     Following the standard React convention, a key called "myKey" would get a setter method called "setMyKey".
@@ -44,7 +44,7 @@ const createStateSetters = (state, bindToLocalStorage, storageName=null, setters
     for (let s in state) {
         formattedName = formatStateName(s);
 
-        if (formattedName) {
+        if (formattedName && !ignoredSetters.includes(s)) {
             setters[formattedName] = async function (value) {
                 const newState = {}
                 newState[s] = value;
@@ -162,6 +162,7 @@ class Multistate {
         let constants = this.constants
         let reducers = this.reducers
         let methods = this.methods;
+        let ignoredSetters = this.ignoredSetters;
 
         const bindToLocalStorage = this.bindToLocalStorage;
         const storageOptions = this.storageOptions
@@ -173,9 +174,9 @@ class Multistate {
 
         // Pre class definition setup
         if (this.allowSetterOverwrite) {
-            setters = this.dynamicSetters ? { ...createStateSetters(state, bindToLocalStorage, storageOptions.name), ...this.setters } : { ...this.setters };
+            setters = this.dynamicSetters ? { ...createStateSetters(state, ignoredSetters), ...this.setters } : { ...this.setters };
         } else {
-            let dynamicSetters = createStateSetters(state, bindToLocalStorage, storageOptions.name)
+            let dynamicSetters = createStateSetters(state, ignoredSetters)
             const dynamicKeys = Object.keys(dynamicSetters);
 
             for (let key of Object.keys(this.setters)) {
@@ -196,7 +197,7 @@ class Multistate {
                     delete this.setters[key]
                 }
             }
-            setters = this.dynamicSetters ? { ...createStateSetters(state, bindToLocalStorage, storageOptions.name), ...this.setters } : { ...this.setters };
+            setters = this.dynamicSetters ? { ...createStateSetters(state, ignoredSetters), ...this.setters } : { ...this.setters };
         }
 
         // define Provider class component

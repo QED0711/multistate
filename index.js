@@ -61,9 +61,9 @@ var formatStateName = function formatStateName(name) {
   return "set" + name.join("");
 };
 
-var createStateSetters = function createStateSetters(state, bindToLocalStorage) {
-  var storageName = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
-  var setters = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+var createStateSetters = function createStateSetters(state) {
+  var ignoredSetters = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+  var setters = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
 
   /* 
   iterates through a provided state object, and takes each key name (state value) and creates a setter method for that value. 
@@ -75,7 +75,7 @@ var createStateSetters = function createStateSetters(state, bindToLocalStorage) 
   var _loop = function _loop(s) {
     formattedName = formatStateName(s);
 
-    if (formattedName) {
+    if (formattedName && !ignoredSetters.includes(s)) {
       setters[formattedName] = /*#__PURE__*/function () {
         var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(value) {
           var _this = this;
@@ -196,6 +196,11 @@ var Multistate = /*#__PURE__*/function () {
       this.setters = setters;
     }
   }, {
+    key: "ignoreSetters",
+    value: function ignoreSetters(settersArr) {
+      this.ignoredSetters = settersArr || [];
+    }
+  }, {
     key: "addReducers",
     value: function addReducers(reducers) {
       this.reducers = reducers;
@@ -239,6 +244,7 @@ var Multistate = /*#__PURE__*/function () {
       var constants = this.constants;
       var reducers = this.reducers;
       var methods = this.methods;
+      var ignoredSetters = this.ignoredSetters;
       var bindToLocalStorage = this.bindToLocalStorage;
       var storageOptions = this.storageOptions;
       var setters; // initialize local storage with state
@@ -246,9 +252,9 @@ var Multistate = /*#__PURE__*/function () {
       storageOptions.name && localStorage.setItem(storageOptions.name, JSON.stringify(state)); // Pre class definition setup
 
       if (this.allowSetterOverwrite) {
-        setters = this.dynamicSetters ? _objectSpread({}, createStateSetters(state, bindToLocalStorage, storageOptions.name), {}, this.setters) : _objectSpread({}, this.setters);
+        setters = this.dynamicSetters ? _objectSpread({}, createStateSetters(state, ignoredSetters), {}, this.setters) : _objectSpread({}, this.setters);
       } else {
-        var dynamicSetters = createStateSetters(state, bindToLocalStorage, storageOptions.name);
+        var dynamicSetters = createStateSetters(state, ignoredSetters);
         var dynamicKeys = Object.keys(dynamicSetters);
 
         for (var _i = 0, _Object$keys = Object.keys(this.setters); _i < _Object$keys.length; _i++) {
@@ -267,7 +273,7 @@ var Multistate = /*#__PURE__*/function () {
           }
         }
 
-        setters = this.dynamicSetters ? _objectSpread({}, createStateSetters(state, bindToLocalStorage, storageOptions.name), {}, this.setters) : _objectSpread({}, this.setters);
+        setters = this.dynamicSetters ? _objectSpread({}, createStateSetters(state, ignoredSetters), {}, this.setters) : _objectSpread({}, this.setters);
       } // define Provider class component
 
 

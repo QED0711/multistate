@@ -304,7 +304,9 @@ class Multistate {
                 for(let key of Object.keys(renameMap)){
                     if(value[key]){
                         value[renameMap[key]] = value[key];
-                        delete value[key]
+                        delete value[key];
+                        // reassign the value in 'this' for reference in across method types (setters, methods, etc.)
+                        this[renameMap[key]] = this[key];
                     }
                 }
 

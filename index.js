@@ -391,7 +391,9 @@ var Multistate = /*#__PURE__*/function () {
 
               if (value[_key]) {
                 value[renameMap[_key]] = value[_key];
-                delete value[_key];
+                delete value[_key]; // reassign the value in 'this' for reference in across method types (setters, methods, etc.)
+
+                this[renameMap[_key]] = this[_key];
               }
             }
 

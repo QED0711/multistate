@@ -4,16 +4,16 @@ const getRoutes = (obj) => {
     
     const paths = []
 
-    const traverse = (element, currentKey="", currentPath=[]) => {
+    const traverse = (element, currentPath=[]) => {
         // base cases
-        if(typeof element !== "object" || Array.isArray(element)){
+        if(typeof element !== "object" || Array.isArray(element) || !element){
             paths.push(currentPath);
             return;
         }
 
         for(let key of Object.keys(element)){
             // traverse(element[key], key, [...currentPath, {key:key, value: element[key]}])
-            traverse(element[key], key, [...currentPath, key])
+            traverse(element[key], [...currentPath, key])
         }
 
 
@@ -63,7 +63,7 @@ const test = {
 
 const test2 = {
     user: {
-        id: 1,
+        id: null,
         username: "something here",
         phone: 1234567890,
         email: "user@test.com"
@@ -81,8 +81,8 @@ getRoutes(test2).forEach((path, i) => {
     console.log(`${i}. ${path}`)
 })
 
-console.log("\n\n", test2, "\n\n")
+// console.log("\n\n", test2, "\n\n")
 
-console.log(
-    reassignValue(test2, getRoutes(test2)[5], "NEW TIME")
-)
+// console.log(
+//     reassignValue(test2, getRoutes(test2)[5], "NEW TIME")
+// )

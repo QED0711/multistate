@@ -32,7 +32,50 @@ const formatStateName = (name) => {
     return "set" + name.join("");
 }
 
-const createStateSetters = (state, ignoredSetters=[], setters={}) => {
+const getNestedRoutes = (state) => {
+    /* 
+    takes a state object and returns paths (as arrays) of all routes, including nested object structures
+    */
+    const paths = []
+
+    const traverse = (element, currentPath = []) => {
+        // base cases
+        if (typeof element !== "object" || Array.isArray(element) || !element) {
+            currentPath.length > 1 && paths.push(currentPath);
+            return;
+        }
+
+        currentPath.length > 1 && paths.push(currentPath)
+        for (let key of Object.keys(element)) {
+            traverse(element[key], [...currentPath, key])
+        }
+    }
+    traverse(state)
+    return paths;
+}
+
+
+const nestedSetterFactory = (state, nsPath) => (newValue) => {
+    let copy = { ...state };
+    let currentPath = copy;
+    let key;
+    for (let i = 0; i < nsPath.length; i++) {
+        key = nsPath[i];
+
+        if (i < nsPath.length - 1) { // if not on the last key in the provided path
+            currentPath[key] = { ...currentPath[key] }
+        } else { // if on last key, reassign value to the new value
+            currentPath[key] = newValue
+        }
+
+        currentPath = currentPath[key]
+    }
+
+    return copy
+}
+
+
+const createStateSetters = (state, ignoredSetters = [], nestedSetters = false, setters = {}) => {
     /* 
     iterates through a provided state object, and takes each key name (state value) and creates a setter method for that value. 
     Following the standard React convention, a key called "myKey" would get a setter method called "setMyKey".
@@ -53,19 +96,37 @@ const createStateSetters = (state, ignoredSetters=[], setters={}) => {
                 })
             }
         }
-
     }
+
+    // handle creation of nested setters
+    if (nestedSetters) {
+        const nestedPaths = getNestedRoutes(state);
+        let nestedName;
+        for (let nsPath of nestedPaths) {
+            nestedName = nsPath.join("_");
+            formattedName = formatStateName(nestedName)
+            if (formattedName && !ignoredSetters.includes(nestedName)) {
+                setters[formattedName] = async function (value) {
+                    const newState = nestedSetterFactory(this.state, nsPath)(value) // reassign the nested value and return whole state object;
+                    return new Promise(async resolve => {
+                        resolve(await this.setState(newState))
+                    })
+                }
+            }
+        }
+    }
+
     return setters;
 }
 
 const createReducerDispatchers = (reducers) => {
     const reducerMethods = {}
-    for(let r in reducers){
+    for (let r in reducers) {
         // console.log(r)
         reducerMethods[r] = (state, action) => {
-                this.setState(reducers[r](state, action))
-            }
-        
+            this.setState(reducers[r](state, action))
+        }
+
     }
 
     // console.log(reducerMethods.stateReducer)
@@ -82,6 +143,7 @@ const DEFAULT_OPTIONS = {
     allowSetterOverwrite: true,
     developmentWarnings: true,
     overwriteProtectionLevel: 1,
+    nestedSetters: false
 }
 
 const DEFAULT_STORAGE_OPTIONS = {
@@ -109,6 +171,7 @@ class Multistate {
         this.allowSetterOverwrite = this.options.allowSetterOverwrite
         this.developmentWarnings = this.options.developmentWarnings
         this.overwriteProtectionLevel = this.options.overwriteProtectionLevel
+        this.nestedSetters = this.options.nestedSetters
 
         // initialize blank storageOptions (will be populated later if user chooses)
         this.storageOptions = {}
@@ -123,7 +186,7 @@ class Multistate {
         this.setters = setters
     }
 
-    ignoreSetters(settersArr){
+    ignoreSetters(settersArr) {
         this.ignoredSetters = settersArr || []
     }
 
@@ -140,7 +203,7 @@ class Multistate {
         this.methods = methods;
     }
 
-    rename(nameMap){
+    rename(nameMap) {
         this.renameMap = nameMap || {}
     }
 
@@ -179,7 +242,7 @@ class Multistate {
 
         // Pre class definition setup
         if (this.allowSetterOverwrite) {
-            setters = this.dynamicSetters ? { ...createStateSetters(state, ignoredSetters), ...this.setters } : { ...this.setters };
+            setters = this.dynamicSetters ? { ...createStateSetters(state, ignoredSetters, this.nestedSetters), ...this.setters } : { ...this.setters };
         } else {
             let dynamicSetters = createStateSetters(state, ignoredSetters)
             const dynamicKeys = Object.keys(dynamicSetters);
@@ -202,7 +265,7 @@ class Multistate {
                     delete this.setters[key]
                 }
             }
-            setters = this.dynamicSetters ? { ...createStateSetters(state, ignoredSetters), ...this.setters } : { ...this.setters };
+            setters = this.dynamicSetters ? { ...createStateSetters(state, ignoredSetters, this.nestedSetters), ...this.setters } : { ...this.setters };
         }
 
         // define Provider class component
@@ -219,7 +282,7 @@ class Multistate {
                 // Create reducers that are copies in name of the previously added reducers
                 // Then, give a dispatch method to each that will execute the actual reducer
                 this.reducersWithDispatchers = this.generateDispatchers(reducers)
-                
+
                 this.methods = bindMethods(methods, this);
 
                 this.bindToLocalStorage = bindToLocalStorage;
@@ -231,7 +294,7 @@ class Multistate {
                 this.setStateMaster = this.setState;
 
                 // Reassign setState function to return a promise, and by default, handle localStorage changes
-                this.setState = function (state, callback = () => {}) {
+                this.setState = function (state, callback = () => { }) {
                     return new Promise(resolve => {
                         this.setStateMaster(state, () => {
                             this.bindToLocalStorage && localStorage.setItem(this.storageOptions.name, JSON.stringify(this.state))
@@ -246,9 +309,9 @@ class Multistate {
 
             generateDispatchers(reducers) {
                 const reducersWithDispatchers = {}
-                
+
                 // define a dispatcher factory to handle the creation of new dispatchers
-                const dispatcherFactory = function(reducerKey){
+                const dispatcherFactory = function (reducerKey) {
                     return function (state, action) {
                         this.setState(this.reducers[reducerKey](state, action))
                     }
@@ -301,8 +364,8 @@ class Multistate {
                 if (Object.keys(reducers).length) value.reducers = this.reducersWithDispatchers
 
                 // rename value keys to user specifications
-                for(let key of Object.keys(renameMap)){
-                    if(value[key]){
+                for (let key of Object.keys(renameMap)) {
+                    if (value[key]) {
                         value[renameMap[key]] = value[key];
                         delete value[key];
                         // reassign the value in 'this' for reference in across method types (setters, methods, etc.)

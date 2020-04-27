@@ -381,6 +381,7 @@ var Multistate = /*#__PURE__*/function () {
       this.bindToLocalStorage = true;
       this.storageOptions = _objectSpread({}, DEFAULT_STORAGE_OPTIONS, {}, options);
       if (!this.storageOptions.name) throw new Error("When connecting your multistate instance to the local storage, you must provide an unique name (string) to avoid conflicts with other local storage parameters.");
+      if (window.localStorage.getItem(this.storageOptions.name)) this.state = JSON.parse(window.localStorage.getItem(this.storageOptions.name));
     }
   }, {
     key: "clearStateFromStorage",
@@ -509,7 +510,7 @@ var Multistate = /*#__PURE__*/function () {
             var _this7 = this;
 
             try {
-              this.setState(_objectSpread({}, this.state, {}, JSON.parse(localStorage[storageOptions.name])));
+              this.setState(_objectSpread({}, this.state, {}, JSON.parse(window.localStorage.getItem(storageOptions.name))));
             } catch (err) {
               var updatedState = typeof localStorage[storageOptions.name] === "string" ? _objectSpread({}, this.state, {}, JSON.parse(localStorage[storageOptions.name])) : _objectSpread({}, this.state);
               this.setState(updatedState, function () {

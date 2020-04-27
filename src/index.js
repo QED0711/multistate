@@ -212,6 +212,8 @@ class Multistate {
         this.storageOptions = { ...DEFAULT_STORAGE_OPTIONS, ...options }
 
         if (!this.storageOptions.name) throw new Error("When connecting your multistate instance to the local storage, you must provide an unique name (string) to avoid conflicts with other local storage parameters.")
+
+        if(window.localStorage.getItem(this.storageOptions.name)) this.state = JSON.parse(window.localStorage.getItem(this.storageOptions.name))
     }
 
     clearStateFromStorage() {
@@ -327,15 +329,16 @@ class Multistate {
             }
 
             updateStateFromLocalStorage() {
+                
                 try {
-                    this.setState({ ...this.state, ...JSON.parse(localStorage[storageOptions.name]) })
+                    this.setState({ ...this.state, ...JSON.parse(window.localStorage.getItem(storageOptions.name)) })
                 } catch (err) {
                     const updatedState = typeof localStorage[storageOptions.name] === "string"
-                        ?
-                        { ...this.state, ...JSON.parse(localStorage[storageOptions.name]) }
-                        :
-                        { ...this.state }
-
+                    ?
+                    { ...this.state, ...JSON.parse(localStorage[storageOptions.name]) }
+                    :
+                    { ...this.state }
+                    
                     this.setState(updatedState, () => {
                         localStorage.setItem(storageOptions.name, JSON.stringify(this.state))
                     })
@@ -359,7 +362,7 @@ class Multistate {
                     constants: constants,
                     methods: this.methods
                 }
-
+                
                 // add reducers with dispatchers
                 if (Object.keys(reducers).length) value.reducers = this.reducersWithDispatchers
 
@@ -372,6 +375,8 @@ class Multistate {
                         this[renameMap[key]] = this[key];
                     }
                 }
+
+                
 
                 return (
                     <Context.Provider value={value}>

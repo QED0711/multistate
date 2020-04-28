@@ -288,6 +288,18 @@ var createStateSetters = function createStateSetters(state) {
   return setters;
 };
 
+var createParamsString = function createParamsString() {
+  var params = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+  var str = "";
+
+  for (var _i2 = 0, _Object$keys2 = Object.keys(params); _i2 < _Object$keys2.length; _i2++) {
+    var param = _Object$keys2[_i2];
+    str += param + "=" + params[param] + ",";
+  }
+
+  return str;
+};
+
 var createReducerDispatchers = function createReducerDispatchers(reducers) {
   var reducerMethods = {};
 
@@ -316,7 +328,9 @@ var DEFAULT_OPTIONS = {
 };
 var DEFAULT_STORAGE_OPTIONS = {
   name: null,
-  unmountBehavior: "all"
+  unmountBehavior: "all",
+  initializeFromLocalStorage: false,
+  subscriberWindows: []
 }; // ========================== multistate CLASS ==========================
 
 var Multistate = /*#__PURE__*/function () {
@@ -380,8 +394,16 @@ var Multistate = /*#__PURE__*/function () {
       var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
       this.bindToLocalStorage = true;
       this.storageOptions = _objectSpread({}, DEFAULT_STORAGE_OPTIONS, {}, options);
-      if (!this.storageOptions.name) throw new Error("When connecting your multistate instance to the local storage, you must provide an unique name (string) to avoid conflicts with other local storage parameters.");
-      if (window.localStorage.getItem(this.storageOptions.name)) this.state = JSON.parse(window.localStorage.getItem(this.storageOptions.name));
+      if (!this.storageOptions.name) throw new Error("When connecting your multistate instance to the local storage, you must provide an unique name (string) to avoid conflicts with other local storage parameters."); // if user has specified to load state from local storage (this only impacts the provider window)
+
+      if (this.storageOptions.initializeFromLocalStorage) {
+        if (window.localStorage.getItem(this.storageOptions.name)) this.state = JSON.parse(window.localStorage.getItem(this.storageOptions.name));
+      } // if the window is a subscriber window, automatically initialize from local storage
+
+
+      if (this.storageOptions.subscriberWindows.includes(window.name)) {
+        if (window.localStorage.getItem(this.storageOptions.name)) this.state = JSON.parse(window.localStorage.getItem(this.storageOptions.name));
+      }
     }
   }, {
     key: "clearStateFromStorage",
@@ -418,8 +440,8 @@ var Multistate = /*#__PURE__*/function () {
         var dynamicSetters = createStateSetters(state, ignoredSetters);
         var dynamicKeys = Object.keys(dynamicSetters);
 
-        for (var _i2 = 0, _Object$keys2 = Object.keys(this.setters); _i2 < _Object$keys2.length; _i2++) {
-          var key = _Object$keys2[_i2];
+        for (var _i3 = 0, _Object$keys3 = Object.keys(this.setters); _i3 < _Object$keys3.length; _i3++) {
+          var key = _Object$keys3[_i3];
 
           if (dynamicKeys.includes(key)) {
             if (this.developmentWarnings) {
@@ -519,6 +541,28 @@ var Multistate = /*#__PURE__*/function () {
             }
           }
         }, {
+          key: "createWindowManager",
+          value: function createWindowManager() {
+            // storage array for opened child windows
+            this.windows = []; // window manager methods passed to user
+
+            var windowManagerMethods = {
+              open: function open(url, name) {
+                var params = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+                this.windows[name] = window.open(url, name, createParamsString(params));
+              },
+              close: function close(name) {
+                if (this.windows[name]) {
+                  this.windows[name].close();
+                }
+
+                delete this.windows[name];
+              }
+            }; // bind methods to 'this'
+
+            return bindMethods(windowManagerMethods, this);
+          }
+        }, {
           key: "componentDidMount",
           value: function componentDidMount() {
             var _this8 = this;
@@ -527,6 +571,8 @@ var Multistate = /*#__PURE__*/function () {
             // if the window is already listening for storage events, then do nothing
             if (bindToLocalStorage && !window.onstorage) {
               window.onstorage = function (e) {
+                console.log("ON STORAGE FIRED");
+
                 _this8.updateStateFromLocalStorage();
               };
             }
@@ -541,10 +587,12 @@ var Multistate = /*#__PURE__*/function () {
               methods: this.methods
             }; // add reducers with dispatchers
 
-            if (Object.keys(reducers).length) value.reducers = this.reducersWithDispatchers; // rename value keys to user specifications
+            if (Object.keys(reducers).length) value.reducers = this.reducersWithDispatchers; // initialize a window manager if within a multi-window state management system
 
-            for (var _i3 = 0, _Object$keys3 = Object.keys(renameMap); _i3 < _Object$keys3.length; _i3++) {
-              var _key = _Object$keys3[_i3];
+            if (this.bindToLocalStorage) value.windowManager = this.createWindowManager(); // rename value keys to user specifications
+
+            for (var _i4 = 0, _Object$keys4 = Object.keys(renameMap); _i4 < _Object$keys4.length; _i4++) {
+              var _key = _Object$keys4[_i4];
 
               if (value[_key]) {
                 value[renameMap[_key]] = value[_key];

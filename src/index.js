@@ -119,6 +119,14 @@ const createStateSetters = (state, ignoredSetters = [], nestedSetters = false, s
     return setters;
 }
 
+const createParamsString = (params = {}) => {
+    let str = ""
+    for(let param of Object.keys(params)){
+        str += (param + "=" + params[param] + ",")
+    }
+    return str;
+}
+
 const createReducerDispatchers = (reducers) => {
     const reducerMethods = {}
     for (let r in reducers) {
@@ -148,7 +156,9 @@ const DEFAULT_OPTIONS = {
 
 const DEFAULT_STORAGE_OPTIONS = {
     name: null,
-    unmountBehavior: "all"
+    unmountBehavior: "all",
+    initializeFromLocalStorage: false,
+    subscriberWindows: [],
 }
 
 
@@ -213,7 +223,16 @@ class Multistate {
 
         if (!this.storageOptions.name) throw new Error("When connecting your multistate instance to the local storage, you must provide an unique name (string) to avoid conflicts with other local storage parameters.")
 
-        if(window.localStorage.getItem(this.storageOptions.name)) this.state = JSON.parse(window.localStorage.getItem(this.storageOptions.name))
+        // if user has specified to load state from local storage (this only impacts the provider window)
+        if (this.storageOptions.initializeFromLocalStorage) {
+            if (window.localStorage.getItem(this.storageOptions.name)) this.state = JSON.parse(window.localStorage.getItem(this.storageOptions.name))
+        }
+
+        // if the window is a subscriber window, automatically initialize from local storage
+        if (this.storageOptions.subscriberWindows.includes(window.name)) {
+            if (window.localStorage.getItem(this.storageOptions.name)) this.state = JSON.parse(window.localStorage.getItem(this.storageOptions.name))
+        }
+
     }
 
     clearStateFromStorage() {
@@ -329,20 +348,42 @@ class Multistate {
             }
 
             updateStateFromLocalStorage() {
-                
+
                 try {
                     this.setState({ ...this.state, ...JSON.parse(window.localStorage.getItem(storageOptions.name)) })
                 } catch (err) {
                     const updatedState = typeof localStorage[storageOptions.name] === "string"
-                    ?
-                    { ...this.state, ...JSON.parse(localStorage[storageOptions.name]) }
-                    :
-                    { ...this.state }
-                    
+                        ?
+                        { ...this.state, ...JSON.parse(localStorage[storageOptions.name]) }
+                        :
+                        { ...this.state }
+
                     this.setState(updatedState, () => {
                         localStorage.setItem(storageOptions.name, JSON.stringify(this.state))
                     })
                 }
+            }
+
+            createWindowManager() {
+                // storage array for opened child windows
+                this.windows = [];
+
+                // window manager methods passed to user
+                const windowManagerMethods = {
+                    open(url, name, params = {}) {
+                        this.windows[name] = window.open(url, name, createParamsString(params))
+                    },
+                    close(name) { 
+                        if(this.windows[name]){
+                            this.windows[name].close();
+                        }
+                        delete this.windows[name]
+                    }
+                }
+
+                // bind methods to 'this'
+                return bindMethods(windowManagerMethods, this)
+
             }
 
             componentDidMount() {
@@ -350,6 +391,7 @@ class Multistate {
                 // if the window is already listening for storage events, then do nothing
                 if (bindToLocalStorage && !window.onstorage) {
                     window.onstorage = e => {
+                        console.log("ON STORAGE FIRED")
                         this.updateStateFromLocalStorage();
                     }
                 }
@@ -362,9 +404,12 @@ class Multistate {
                     constants: constants,
                     methods: this.methods
                 }
-                
+
                 // add reducers with dispatchers
                 if (Object.keys(reducers).length) value.reducers = this.reducersWithDispatchers
+
+                // initialize a window manager if within a multi-window state management system
+                if (this.bindToLocalStorage) value.windowManager = this.createWindowManager();
 
                 // rename value keys to user specifications
                 for (let key of Object.keys(renameMap)) {
@@ -376,7 +421,8 @@ class Multistate {
                     }
                 }
 
-                
+
+
 
                 return (
                     <Context.Provider value={value}>

@@ -330,7 +330,9 @@ var DEFAULT_STORAGE_OPTIONS = {
   name: null,
   unmountBehavior: "all",
   initializeFromLocalStorage: false,
-  subscriberWindows: []
+  subscriberWindows: [],
+  removeChildrenOnUnload: true,
+  clearStorageOnUnload: true
 }; // ========================== multistate CLASS ==========================
 
 var Multistate = /*#__PURE__*/function () {
@@ -393,8 +395,11 @@ var Multistate = /*#__PURE__*/function () {
     value: function connectToLocalStorage() {
       var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
       this.bindToLocalStorage = true;
-      this.storageOptions = _objectSpread({}, DEFAULT_STORAGE_OPTIONS, {}, options);
-      if (!this.storageOptions.name) throw new Error("When connecting your multistate instance to the local storage, you must provide an unique name (string) to avoid conflicts with other local storage parameters."); // if user has specified to load state from local storage (this only impacts the provider window)
+      this.storageOptions = _objectSpread({}, DEFAULT_STORAGE_OPTIONS, {}, options); // if no name is specified, throw an error, as this is a required field to manage multiple localStorage instances
+
+      if (!this.storageOptions.name) throw new Error("When connecting your multistate instance to the local storage, you must provide an unique name (string) to avoid conflicts with other local storage parameters."); // default the provider window name to the localStorage name if providerWindow param not given
+
+      this.storageOptions.providerWindow = this.storageOptions.providerWindow || this.storageOptions.name; // if user has specified to load state from local storage (this only impacts the provider window)
 
       if (this.storageOptions.initializeFromLocalStorage) {
         if (window.localStorage.getItem(this.storageOptions.name)) this.state = JSON.parse(window.localStorage.getItem(this.storageOptions.name));
@@ -404,19 +409,23 @@ var Multistate = /*#__PURE__*/function () {
       if (this.storageOptions.subscriberWindows.includes(window.name)) {
         if (window.localStorage.getItem(this.storageOptions.name)) this.state = JSON.parse(window.localStorage.getItem(this.storageOptions.name));
       }
-    }
-  }, {
-    key: "clearStateFromStorage",
-    value: function clearStateFromStorage() {
-      var _this4 = this;
 
-      var handleUnload = function handleUnload(e) {
-        _this4.storageOptions.name && localStorage.removeItem(_this4.storageOptions.name);
-      };
+      if (!window.name && this.storageOptions.providerWindow) window.name = this.storageOptions.providerWindow; // window.name = this.storageOptions.providerName ? this.storageOptions.providerName : null
+      // if user has specified to clear the storage state on unload of provider window
+      // if(this.storageOptions.clearStorageOnUnload && window.name === this.storageOptions.providerWindow) {
+      //     this._clearStateFromStorage()
+      // }
+    } // _clearStateFromStorage() {
+    //     function handleUnload(e){
+    //         this.storageOptions.name && localStorage.removeItem(this.storageOptions.name)
+    //         if(this.storageOptions.removeChildrenOnUnload){
+    //         }
+    //     }
+    //     handleUnload = handleUnload.bind(this)
+    //     window.onbeforeunload = handleUnload
+    //     window.onunload = handleUnload
+    // }
 
-      window.onbeforeunload = handleUnload;
-      window.onunload = handleUnload;
-    }
   }, {
     key: "createProvider",
     value: function createProvider() {
@@ -466,42 +475,42 @@ var Multistate = /*#__PURE__*/function () {
         var _super = _createSuper(Provider);
 
         function Provider(props) {
-          var _this5;
+          var _this4;
 
           _classCallCheck(this, Provider);
 
-          _this5 = _super.call(this, props);
-          _this5.state = state;
-          _this5.setters = bindMethods(setters, _assertThisInitialized(_this5)); // set this.reducers to the reducered added in the multistate Class 
+          _this4 = _super.call(this, props);
+          _this4.state = state;
+          _this4.setters = bindMethods(setters, _assertThisInitialized(_this4)); // set this.reducers to the reducered added in the multistate Class 
 
-          _this5.reducers = reducers; // bind generatDispatchers
+          _this4.reducers = reducers; // bind generatDispatchers
 
-          _this5.generateDispatchers = _this5.generateDispatchers.bind(_assertThisInitialized(_this5)); // Create reducers that are copies in name of the previously added reducers
+          _this4.generateDispatchers = _this4.generateDispatchers.bind(_assertThisInitialized(_this4)); // Create reducers that are copies in name of the previously added reducers
           // Then, give a dispatch method to each that will execute the actual reducer
 
-          _this5.reducersWithDispatchers = _this5.generateDispatchers(reducers);
-          _this5.methods = bindMethods(methods, _assertThisInitialized(_this5));
-          _this5.bindToLocalStorage = bindToLocalStorage;
-          _this5.storageOptions = storageOptions;
-          _this5.updateStateFromLocalStorage = _this5.updateStateFromLocalStorage.bind(_assertThisInitialized(_this5)); // Save master version of setState prior to reassignment
+          _this4.reducersWithDispatchers = _this4.generateDispatchers(reducers);
+          _this4.methods = bindMethods(methods, _assertThisInitialized(_this4));
+          _this4.bindToLocalStorage = bindToLocalStorage;
+          _this4.storageOptions = storageOptions;
+          _this4.updateStateFromLocalStorage = _this4.updateStateFromLocalStorage.bind(_assertThisInitialized(_this4)); // Save master version of setState prior to reassignment
 
-          _this5.setStateMaster = _this5.setState; // Reassign setState function to return a promise, and by default, handle localStorage changes
+          _this4.setStateMaster = _this4.setState; // Reassign setState function to return a promise, and by default, handle localStorage changes
 
-          _this5.setState = function (state) {
-            var _this6 = this;
+          _this4.setState = function (state) {
+            var _this5 = this;
 
             var callback = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : function () {};
             return new Promise(function (resolve) {
-              _this6.setStateMaster(state, function () {
-                _this6.bindToLocalStorage && localStorage.setItem(_this6.storageOptions.name, JSON.stringify(_this6.state));
-                callback(_this6.state);
-                resolve(_this6.state);
+              _this5.setStateMaster(state, function () {
+                _this5.bindToLocalStorage && localStorage.setItem(_this5.storageOptions.name, JSON.stringify(_this5.state));
+                callback(_this5.state);
+                resolve(_this5.state);
               });
             });
           };
 
-          _this5.setState = _this5.setState.bind(_assertThisInitialized(_this5));
-          return _this5;
+          _this4.setState = _this4.setState.bind(_assertThisInitialized(_this4));
+          return _this4;
         }
 
         _createClass(Provider, [{
@@ -529,22 +538,22 @@ var Multistate = /*#__PURE__*/function () {
         }, {
           key: "updateStateFromLocalStorage",
           value: function updateStateFromLocalStorage() {
-            var _this7 = this;
+            var _this6 = this;
 
             try {
               this.setState(_objectSpread({}, this.state, {}, JSON.parse(window.localStorage.getItem(storageOptions.name))));
             } catch (err) {
               var updatedState = typeof localStorage[storageOptions.name] === "string" ? _objectSpread({}, this.state, {}, JSON.parse(localStorage[storageOptions.name])) : _objectSpread({}, this.state);
               this.setState(updatedState, function () {
-                localStorage.setItem(storageOptions.name, JSON.stringify(_this7.state));
+                localStorage.setItem(storageOptions.name, JSON.stringify(_this6.state));
               });
             }
           }
         }, {
           key: "createWindowManager",
           value: function createWindowManager() {
-            // storage array for opened child windows
-            this.windows = []; // window manager methods passed to user
+            // storage object for opened child windows
+            this.windows = {}; // window manager methods passed to user
 
             var windowManagerMethods = {
               open: function open(url, name) {
@@ -558,14 +567,39 @@ var Multistate = /*#__PURE__*/function () {
 
                 delete this.windows[name];
               }
-            }; // bind methods to 'this'
+            }; // instruct the window what to do when it closes
+            // we define this here, and not up in the multistate class because we need access to all generated child windows
+
+            if (window.name === storageOptions.providerWindow || storageOptions.removeChildrenOnUnload) {
+              var handleUnload = function handleUnload(e) {
+                // clear local storage only if specified by user AND the window being closed is the provider window 
+                if (storageOptions.clearStorageOnUnload && storageOptions.providerWindow === window.name) {
+                  localStorage.removeItem(storageOptions.name);
+                } // close all children (and grand children) windows if this functionality has been specified by the user
+
+
+                if (storageOptions.removeChildrenOnUnload) {
+                  for (var _i4 = 0, _Object$keys4 = Object.keys(this.windows); _i4 < _Object$keys4.length; _i4++) {
+                    var w = _Object$keys4[_i4];
+                    this.windows[w].close();
+                  }
+                } // return "uncomment to debug unload functionality"
+
+              };
+
+              handleUnload = handleUnload.bind(this); // set the unload functionality
+
+              window.onbeforeunload = handleUnload;
+              window.onunload = handleUnload;
+            } // bind methods to 'this'
+
 
             return bindMethods(windowManagerMethods, this);
           }
         }, {
           key: "componentDidMount",
           value: function componentDidMount() {
-            var _this8 = this;
+            var _this7 = this;
 
             // When component mounts, if bindToLocalStorage has been set to true, make the window listen for storage change events and update the state 
             // if the window is already listening for storage events, then do nothing
@@ -573,7 +607,7 @@ var Multistate = /*#__PURE__*/function () {
               window.onstorage = function (e) {
                 console.log("ON STORAGE FIRED");
 
-                _this8.updateStateFromLocalStorage();
+                _this7.updateStateFromLocalStorage();
               };
             }
           }
@@ -591,8 +625,8 @@ var Multistate = /*#__PURE__*/function () {
 
             if (this.bindToLocalStorage) value.windowManager = this.createWindowManager(); // rename value keys to user specifications
 
-            for (var _i4 = 0, _Object$keys4 = Object.keys(renameMap); _i4 < _Object$keys4.length; _i4++) {
-              var _key = _Object$keys4[_i4];
+            for (var _i5 = 0, _Object$keys5 = Object.keys(renameMap); _i5 < _Object$keys5.length; _i5++) {
+              var _key = _Object$keys5[_i5];
 
               if (value[_key]) {
                 value[renameMap[_key]] = value[_key];

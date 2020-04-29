@@ -121,7 +121,7 @@ const createStateSetters = (state, ignoredSetters = [], nestedSetters = false, s
 
 const createParamsString = (params = {}) => {
     let str = ""
-    for(let param of Object.keys(params)){
+    for (let param of Object.keys(params)) {
         str += (param + "=" + params[param] + ",")
     }
     return str;
@@ -159,6 +159,8 @@ const DEFAULT_STORAGE_OPTIONS = {
     unmountBehavior: "all",
     initializeFromLocalStorage: false,
     subscriberWindows: [],
+    removeChildrenOnUnload: true,
+    clearStorageOnUnload: true,
 }
 
 
@@ -221,7 +223,11 @@ class Multistate {
         this.bindToLocalStorage = true
         this.storageOptions = { ...DEFAULT_STORAGE_OPTIONS, ...options }
 
+        // if no name is specified, throw an error, as this is a required field to manage multiple localStorage instances
         if (!this.storageOptions.name) throw new Error("When connecting your multistate instance to the local storage, you must provide an unique name (string) to avoid conflicts with other local storage parameters.")
+
+        // default the provider window name to the localStorage name if providerWindow param not given
+        this.storageOptions.providerWindow = this.storageOptions.providerWindow || this.storageOptions.name
 
         // if user has specified to load state from local storage (this only impacts the provider window)
         if (this.storageOptions.initializeFromLocalStorage) {
@@ -233,15 +239,31 @@ class Multistate {
             if (window.localStorage.getItem(this.storageOptions.name)) this.state = JSON.parse(window.localStorage.getItem(this.storageOptions.name))
         }
 
+        if(!window.name && this.storageOptions.providerWindow) window.name = this.storageOptions.providerWindow
+
+        // window.name = this.storageOptions.providerName ? this.storageOptions.providerName : null
+
+        // if user has specified to clear the storage state on unload of provider window
+        // if(this.storageOptions.clearStorageOnUnload && window.name === this.storageOptions.providerWindow) {
+        //     this._clearStateFromStorage()
+        // }
+
     }
 
-    clearStateFromStorage() {
-        const handleUnload = e => {
-            this.storageOptions.name && localStorage.removeItem(this.storageOptions.name)
-        }
-        window.onbeforeunload = handleUnload
-        window.onunload = handleUnload
-    }
+    // _clearStateFromStorage() {
+    //     function handleUnload(e){
+    //         this.storageOptions.name && localStorage.removeItem(this.storageOptions.name)
+    //         if(this.storageOptions.removeChildrenOnUnload){
+
+    //         }
+    //     }
+
+    //     handleUnload = handleUnload.bind(this)
+
+    //     window.onbeforeunload = handleUnload
+    //     window.onunload = handleUnload
+
+    // }
 
     createProvider() {
         // copy instance properties/methods
@@ -365,21 +387,50 @@ class Multistate {
             }
 
             createWindowManager() {
-                // storage array for opened child windows
-                this.windows = [];
-
+                // storage object for opened child windows
+                this.windows = {};
+                
                 // window manager methods passed to user
                 const windowManagerMethods = {
                     open(url, name, params = {}) {
                         this.windows[name] = window.open(url, name, createParamsString(params))
                     },
-                    close(name) { 
-                        if(this.windows[name]){
+                    close(name) {
+                        if (this.windows[name]) {
                             this.windows[name].close();
                         }
                         delete this.windows[name]
                     }
                 }
+
+                // instruct the window what to do when it closes
+                // we define this here, and not up in the multistate class because we need access to all generated child windows
+                if(window.name === storageOptions.providerWindow || storageOptions.removeChildrenOnUnload){
+                    function handleUnload(e){
+                        
+                        // clear local storage only if specified by user AND the window being closed is the provider window 
+                        if(storageOptions.clearStorageOnUnload && storageOptions.providerWindow === window.name){
+                            localStorage.removeItem(storageOptions.name)
+                        }
+
+                        // close all children (and grand children) windows if this functionality has been specified by the user
+                        if(storageOptions.removeChildrenOnUnload){
+                            for(let w of Object.keys(this.windows)){
+                                this.windows[w].close()
+                            }
+                        } 
+    
+                        // return "uncomment to debug unload functionality"
+                    }
+    
+                    handleUnload = handleUnload.bind(this)
+                    
+                    // set the unload functionality
+                    window.onbeforeunload = handleUnload
+                    window.onunload = handleUnload
+                }
+
+
 
                 // bind methods to 'this'
                 return bindMethods(windowManagerMethods, this)

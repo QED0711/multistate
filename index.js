@@ -332,7 +332,8 @@ var DEFAULT_STORAGE_OPTIONS = {
   initializeFromLocalStorage: false,
   subscriberWindows: [],
   removeChildrenOnUnload: true,
-  clearStorageOnUnload: true
+  clearStorageOnUnload: true,
+  privateStatePaths: []
 }; // ========================== multistate CLASS ==========================
 
 var Multistate = /*#__PURE__*/function () {
@@ -407,14 +408,15 @@ var Multistate = /*#__PURE__*/function () {
 
 
       if (this.storageOptions.subscriberWindows.includes(window.name)) {
-        if (window.localStorage.getItem(this.storageOptions.name)) this.state = JSON.parse(window.localStorage.getItem(this.storageOptions.name));
+        if (window.localStorage.getItem(this.storageOptions.name)) {
+          this.state = JSON.parse(window.localStorage.getItem(this.storageOptions.name)); // remove any state paths designated as private (only belonging to the provider window)
+          // for(let path of this.storageOptions.privateStatePaths){
+          //     delete this.state[path]
+          // }
+        }
       }
 
-      if (!window.name && this.storageOptions.providerWindow) window.name = this.storageOptions.providerWindow; // window.name = this.storageOptions.providerName ? this.storageOptions.providerName : null
-      // if user has specified to clear the storage state on unload of provider window
-      // if(this.storageOptions.clearStorageOnUnload && window.name === this.storageOptions.providerWindow) {
-      //     this._clearStateFromStorage()
-      // }
+      if (!window.name && this.storageOptions.providerWindow) window.name = this.storageOptions.providerWindow;
     } // _clearStateFromStorage() {
     //     function handleUnload(e){
     //         this.storageOptions.name && localStorage.removeItem(this.storageOptions.name)
@@ -440,8 +442,28 @@ var Multistate = /*#__PURE__*/function () {
       var bindToLocalStorage = this.bindToLocalStorage;
       var storageOptions = this.storageOptions;
       var setters; // initialize local storage with state
+      // also check to make sure that any state paths marked as private are removed before setting local storage
 
-      storageOptions.name && localStorage.setItem(storageOptions.name, JSON.stringify(state)); // Pre class definition setup
+      if (storageOptions.name) {
+        var authorizedState = _objectSpread({}, state);
+
+        var _iterator2 = _createForOfIteratorHelper(storageOptions.privateStatePaths),
+            _step2;
+
+        try {
+          for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+            var path = _step2.value;
+            delete authorizedState[path];
+          }
+        } catch (err) {
+          _iterator2.e(err);
+        } finally {
+          _iterator2.f();
+        }
+
+        storageOptions.name && localStorage.setItem(storageOptions.name, JSON.stringify(authorizedState));
+      } // Pre class definition setup
+
 
       if (this.allowSetterOverwrite) {
         setters = this.dynamicSetters ? _objectSpread({}, createStateSetters(state, ignoredSetters, this.nestedSetters), {}, this.setters) : _objectSpread({}, this.setters);
@@ -469,8 +491,8 @@ var Multistate = /*#__PURE__*/function () {
       } // define Provider class component
 
 
-      var Provider = /*#__PURE__*/function (_Component) {
-        _inherits(Provider, _Component);
+      var Provider = /*#__PURE__*/function (_PureComponent) {
+        _inherits(Provider, _PureComponent);
 
         var _super = _createSuper(Provider);
 
@@ -502,7 +524,32 @@ var Multistate = /*#__PURE__*/function () {
             var callback = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : function () {};
             return new Promise(function (resolve) {
               _this5.setStateMaster(state, function () {
-                _this5.bindToLocalStorage && localStorage.setItem(_this5.storageOptions.name, JSON.stringify(_this5.state));
+                // handle local storage updates to state
+                if (_this5.bindToLocalStorage) {
+                  if (_this5.storageOptions.privateStatePaths.length && window.name === _this5.storageOptions.providerWindow) {
+                    // if there are any private paths that need to be removed (only proceed if fired from the provider window)
+                    var _authorizedState = _objectSpread({}, _this5.state);
+
+                    var _iterator3 = _createForOfIteratorHelper(_this5.storageOptions.privateStatePaths),
+                        _step3;
+
+                    try {
+                      for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
+                        var _path = _step3.value;
+                        delete _authorizedState[_path];
+                        localStorage.setItem(_this5.storageOptions.name, JSON.stringify(_authorizedState));
+                      }
+                    } catch (err) {
+                      _iterator3.e(err);
+                    } finally {
+                      _iterator3.f();
+                    }
+                  } else {
+                    console.log("CALLED NON AUTHORIZED");
+                    localStorage.setItem(_this5.storageOptions.name, JSON.stringify(_this5.state));
+                  }
+                }
+
                 callback(_this5.state);
                 resolve(_this5.state);
               });
@@ -538,15 +585,12 @@ var Multistate = /*#__PURE__*/function () {
         }, {
           key: "updateStateFromLocalStorage",
           value: function updateStateFromLocalStorage() {
-            var _this6 = this;
-
             try {
               this.setState(_objectSpread({}, this.state, {}, JSON.parse(window.localStorage.getItem(storageOptions.name))));
             } catch (err) {
+              // bug check: is this still needed?
               var updatedState = typeof localStorage[storageOptions.name] === "string" ? _objectSpread({}, this.state, {}, JSON.parse(localStorage[storageOptions.name])) : _objectSpread({}, this.state);
-              this.setState(updatedState, function () {
-                localStorage.setItem(storageOptions.name, JSON.stringify(_this6.state));
-              });
+              this.setState(updatedState);
             }
           }
         }, {
@@ -566,6 +610,9 @@ var Multistate = /*#__PURE__*/function () {
                 }
 
                 delete this.windows[name];
+              },
+              getChildren: function getChildren() {
+                return this.windows;
               }
             }; // instruct the window what to do when it closes
             // we define this here, and not up in the multistate class because we need access to all generated child windows
@@ -599,7 +646,7 @@ var Multistate = /*#__PURE__*/function () {
         }, {
           key: "componentDidMount",
           value: function componentDidMount() {
-            var _this7 = this;
+            var _this6 = this;
 
             // When component mounts, if bindToLocalStorage has been set to true, make the window listen for storage change events and update the state 
             // if the window is already listening for storage events, then do nothing
@@ -607,7 +654,7 @@ var Multistate = /*#__PURE__*/function () {
               window.onstorage = function (e) {
                 console.log("ON STORAGE FIRED");
 
-                _this7.updateStateFromLocalStorage();
+                _this6.updateStateFromLocalStorage();
               };
             }
           }
@@ -619,7 +666,10 @@ var Multistate = /*#__PURE__*/function () {
               setters: this.setters,
               constants: constants,
               methods: this.methods
-            }; // add reducers with dispatchers
+            };
+            console.log({
+              value: value
+            }); // add reducers with dispatchers
 
             if (Object.keys(reducers).length) value.reducers = this.reducersWithDispatchers; // initialize a window manager if within a multi-window state management system
 
@@ -643,7 +693,7 @@ var Multistate = /*#__PURE__*/function () {
         }]);
 
         return Provider;
-      }(_react.Component); // return provider class
+      }(_react.PureComponent); // return provider class
 
 
       return Provider;

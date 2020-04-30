@@ -1,4 +1,4 @@
-import React, { createContext, Component } from "react";
+import React, { createContext, PureComponent } from "react";
 
 // const React = require('react')
 // const { createContext, Component } = React
@@ -161,6 +161,7 @@ const DEFAULT_STORAGE_OPTIONS = {
     subscriberWindows: [],
     removeChildrenOnUnload: true,
     clearStorageOnUnload: true,
+    privateStatePaths: []
 }
 
 
@@ -236,17 +237,18 @@ class Multistate {
 
         // if the window is a subscriber window, automatically initialize from local storage
         if (this.storageOptions.subscriberWindows.includes(window.name)) {
-            if (window.localStorage.getItem(this.storageOptions.name)) this.state = JSON.parse(window.localStorage.getItem(this.storageOptions.name))
+            if (window.localStorage.getItem(this.storageOptions.name)) {
+                this.state = JSON.parse(window.localStorage.getItem(this.storageOptions.name))
+                // remove any state paths designated as private (only belonging to the provider window)
+                // for(let path of this.storageOptions.privateStatePaths){
+                //     delete this.state[path]
+                // }
+            }
         }
 
         if(!window.name && this.storageOptions.providerWindow) window.name = this.storageOptions.providerWindow
 
-        // window.name = this.storageOptions.providerName ? this.storageOptions.providerName : null
 
-        // if user has specified to clear the storage state on unload of provider window
-        // if(this.storageOptions.clearStorageOnUnload && window.name === this.storageOptions.providerWindow) {
-        //     this._clearStateFromStorage()
-        // }
 
     }
 
@@ -280,7 +282,14 @@ class Multistate {
         let setters;
 
         // initialize local storage with state
-        storageOptions.name && localStorage.setItem(storageOptions.name, JSON.stringify(state))
+        // also check to make sure that any state paths marked as private are removed before setting local storage
+        if(storageOptions.name){
+            const authorizedState = {...state}
+            for(let path of storageOptions.privateStatePaths){
+                delete authorizedState[path]
+            }
+            storageOptions.name && localStorage.setItem(storageOptions.name, JSON.stringify(authorizedState))
+        }
 
 
         // Pre class definition setup
@@ -312,7 +321,7 @@ class Multistate {
         }
 
         // define Provider class component
-        class Provider extends Component {
+        class Provider extends PureComponent {
             constructor(props) {
                 super(props);
                 this.state = state
@@ -340,7 +349,19 @@ class Multistate {
                 this.setState = function (state, callback = () => { }) {
                     return new Promise(resolve => {
                         this.setStateMaster(state, () => {
-                            this.bindToLocalStorage && localStorage.setItem(this.storageOptions.name, JSON.stringify(this.state))
+                            // handle local storage updates to state
+                            if(this.bindToLocalStorage){
+                                if(this.storageOptions.privateStatePaths.length && window.name === this.storageOptions.providerWindow){ // if there are any private paths that need to be removed (only proceed if fired from the provider window)
+                                   const authorizedState = {...this.state}                                   
+                                   for(let path of this.storageOptions.privateStatePaths){
+                                       delete authorizedState[path]
+                                       localStorage.setItem(this.storageOptions.name, JSON.stringify(authorizedState))
+                                   } 
+                                } else {
+                                    console.log("CALLED NON AUTHORIZED")
+                                    localStorage.setItem(this.storageOptions.name, JSON.stringify(this.state))
+                                }
+                            }
                             callback(this.state)
                             resolve(this.state)
                         })
@@ -373,16 +394,14 @@ class Multistate {
 
                 try {
                     this.setState({ ...this.state, ...JSON.parse(window.localStorage.getItem(storageOptions.name)) })
-                } catch (err) {
+                } catch (err) { // bug check: is this still needed?
                     const updatedState = typeof localStorage[storageOptions.name] === "string"
                         ?
                         { ...this.state, ...JSON.parse(localStorage[storageOptions.name]) }
                         :
                         { ...this.state }
 
-                    this.setState(updatedState, () => {
-                        localStorage.setItem(storageOptions.name, JSON.stringify(this.state))
-                    })
+                    this.setState(updatedState)
                 }
             }
 
@@ -400,6 +419,9 @@ class Multistate {
                             this.windows[name].close();
                         }
                         delete this.windows[name]
+                    },
+                    getChildren(){
+                        return this.windows;
                     }
                 }
 
@@ -448,6 +470,7 @@ class Multistate {
                 }
             }
 
+
             render() {
                 const value = {
                     state: this.state,
@@ -455,7 +478,7 @@ class Multistate {
                     constants: constants,
                     methods: this.methods
                 }
-
+                console.log({value})
                 // add reducers with dispatchers
                 if (Object.keys(reducers).length) value.reducers = this.reducersWithDispatchers
 

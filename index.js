@@ -597,7 +597,7 @@ var Multistate = /*#__PURE__*/function () {
           key: "createWindowManager",
           value: function createWindowManager() {
             // storage object for opened child windows
-            this.windows = {}; // window manager methods passed to user
+            this.windows = this.windows || {}; // window manager methods passed to user
 
             var windowManagerMethods = {
               open: function open(url, name) {
@@ -672,6 +672,7 @@ var Multistate = /*#__PURE__*/function () {
             }); // add reducers with dispatchers
 
             if (Object.keys(reducers).length) value.reducers = this.reducersWithDispatchers; // initialize a window manager if within a multi-window state management system
+            // debugger
 
             if (this.bindToLocalStorage) value.windowManager = this.createWindowManager(); // rename value keys to user specifications
 
@@ -686,6 +687,7 @@ var Multistate = /*#__PURE__*/function () {
               }
             }
 
+            console.log("FIRED");
             return /*#__PURE__*/_react["default"].createElement(Context.Provider, {
               value: value
             }, this.props.children);

@@ -407,7 +407,7 @@ class Multistate {
 
             createWindowManager() {
                 // storage object for opened child windows
-                this.windows = {};
+                this.windows = this.windows || {};
                 
                 // window manager methods passed to user
                 const windowManagerMethods = {
@@ -476,7 +476,8 @@ class Multistate {
                     state: this.state,
                     setters: this.setters,
                     constants: constants,
-                    methods: this.methods
+                    methods: this.methods,
+                    
                 }
                 console.log({value})
                 // add reducers with dispatchers
@@ -496,7 +497,7 @@ class Multistate {
                 }
 
 
-
+                console.log("FIRED")
 
                 return (
                     <Context.Provider value={value}>

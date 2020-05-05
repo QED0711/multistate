@@ -8,6 +8,14 @@ function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return 
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || _typeof(obj) !== "object" && typeof obj !== "function") { return { "default": obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj["default"] = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
 
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
+
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+function _iterableToArrayLimit(arr, i) { if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return; var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
 
 function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
@@ -32,7 +40,7 @@ function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try
 
 function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
 
-function _createForOfIteratorHelper(o) { if (typeof Symbol === "undefined" || o[Symbol.iterator] == null) { if (Array.isArray(o) || (o = _unsupportedIterableToArray(o))) { var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var it, normalCompletion = true, didErr = false, err; return { s: function s() { it = o[Symbol.iterator](); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it["return"] != null) it["return"](); } finally { if (didErr) throw err; } } }; }
+function _createForOfIteratorHelper(o) { if (typeof Symbol === "undefined" || o[Symbol.iterator] == null) { if (Array.isArray(o) || (o = _unsupportedIterableToArray(o))) { var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e2) { throw _e2; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var it, normalCompletion = true, didErr = false, err; return { s: function s() { it = o[Symbol.iterator](); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e3) { didErr = true; err = _e3; }, f: function f() { try { if (!normalCompletion && it["return"] != null) it["return"](); } finally { if (didErr) throw err; } } }; }
 
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
 
@@ -300,6 +308,54 @@ var createParamsString = function createParamsString() {
   return str;
 };
 
+var cleanState = function cleanState(state, privatePaths) {
+  /* 
+  takes a state object and list of private paths as inputs, and returns the state with the private paths removed. 
+  */
+  var cleaned = _objectSpread({}, state); // make a copy of state
+
+
+  var np, nestedPath;
+
+  var _iterator2 = _createForOfIteratorHelper(privatePaths),
+      _step2;
+
+  try {
+    for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+      var path = _step2.value;
+
+      if (Array.isArray(path)) {
+        // if provided with a nested path, traverse down and delete final entry
+        nestedPath = cleaned;
+
+        for (var i = 0; i < path.length; i++) {
+          np = path[i];
+
+          try {
+            if (i === path.length - 1) {
+              delete nestedPath[np];
+            } else {
+              nestedPath = nestedPath[np];
+            }
+          } catch (err) {
+            // if a provided key along the path does not exist, inform user
+            console.error("Provided key, [\"".concat(path[i - 1], "\"] does not exist\n\nFull error message reads:\n\n"), err);
+            break;
+          }
+        }
+      } else {
+        delete cleaned[path];
+      }
+    }
+  } catch (err) {
+    _iterator2.e(err);
+  } finally {
+    _iterator2.f();
+  }
+
+  return cleaned;
+};
+
 var createReducerDispatchers = function createReducerDispatchers(reducers) {
   var reducerMethods = {};
 
@@ -445,21 +501,10 @@ var Multistate = /*#__PURE__*/function () {
       // also check to make sure that any state paths marked as private are removed before setting local storage
 
       if (storageOptions.name) {
-        var authorizedState = _objectSpread({}, state);
-
-        var _iterator2 = _createForOfIteratorHelper(storageOptions.privateStatePaths),
-            _step2;
-
-        try {
-          for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
-            var path = _step2.value;
-            delete authorizedState[path];
-          }
-        } catch (err) {
-          _iterator2.e(err);
-        } finally {
-          _iterator2.f();
-        }
+        var authorizedState = cleanState(state, storageOptions.privateStatePaths); // const authorizedState = { ...state }
+        // for (let path of storageOptions.privateStatePaths) {
+        //     delete authorizedState[path]
+        // }
 
         storageOptions.name && localStorage.setItem(storageOptions.name, JSON.stringify(authorizedState));
       } // Pre class definition setup
@@ -528,22 +573,13 @@ var Multistate = /*#__PURE__*/function () {
                 if (_this5.bindToLocalStorage) {
                   if (_this5.storageOptions.privateStatePaths.length && window.name === _this5.storageOptions.providerWindow) {
                     // if there are any private paths that need to be removed (only proceed if fired from the provider window)
-                    var _authorizedState = _objectSpread({}, _this5.state);
+                    var _authorizedState = cleanState(_this5.state, _this5.storageOptions.privateStatePaths); // const authorizedState = { ...this.state }
+                    // for (let path of this.storageOptions.privateStatePaths) {
+                    //     delete authorizedState[path]
+                    // }
 
-                    var _iterator3 = _createForOfIteratorHelper(_this5.storageOptions.privateStatePaths),
-                        _step3;
 
-                    try {
-                      for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
-                        var _path = _step3.value;
-                        delete _authorizedState[_path];
-                        localStorage.setItem(_this5.storageOptions.name, JSON.stringify(_authorizedState));
-                      }
-                    } catch (err) {
-                      _iterator3.e(err);
-                    } finally {
-                      _iterator3.f();
-                    }
+                    localStorage.setItem(_this5.storageOptions.name, JSON.stringify(_authorizedState));
                   } else {
                     console.log("CALLED NON AUTHORIZED");
                     localStorage.setItem(_this5.storageOptions.name, JSON.stringify(_this5.state));
@@ -659,6 +695,27 @@ var Multistate = /*#__PURE__*/function () {
             }
           }
         }, {
+          key: "componentDidUpdate",
+          value: function componentDidUpdate(prevProps, prevState) {
+            Object.entries(this.props).forEach(function (_ref5) {
+              var _ref6 = _slicedToArray(_ref5, 2),
+                  key = _ref6[0],
+                  val = _ref6[1];
+
+              return prevProps[key] !== val && console.log("Prop '".concat(key, "' changed"));
+            });
+
+            if (this.state) {
+              Object.entries(this.state).forEach(function (_ref7) {
+                var _ref8 = _slicedToArray(_ref7, 2),
+                    key = _ref8[0],
+                    val = _ref8[1];
+
+                return prevState[key] !== val && console.log("State '".concat(key, "' changed"));
+              });
+            }
+          }
+        }, {
           key: "render",
           value: function render() {
             var value = {
@@ -666,13 +723,9 @@ var Multistate = /*#__PURE__*/function () {
               setters: this.setters,
               constants: constants,
               methods: this.methods
-            };
-            console.log({
-              value: value
-            }); // add reducers with dispatchers
+            }; // add reducers with dispatchers
 
             if (Object.keys(reducers).length) value.reducers = this.reducersWithDispatchers; // initialize a window manager if within a multi-window state management system
-            // debugger
 
             if (this.bindToLocalStorage) value.windowManager = this.createWindowManager(); // rename value keys to user specifications
 
@@ -687,7 +740,6 @@ var Multistate = /*#__PURE__*/function () {
               }
             }
 
-            console.log("FIRED");
             return /*#__PURE__*/_react["default"].createElement(Context.Provider, {
               value: value
             }, this.props.children);

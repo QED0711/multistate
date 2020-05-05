@@ -45,6 +45,42 @@ const reassignValue = (obj, path, newValue) => {
 }
 
 
+const cleanState = (state, privatePaths) => {
+
+    /* 
+    takes a state object and list of private paths as inputs, and returns the state with the private paths removed. 
+    */
+
+    const cleaned = {...state} // make a copy of state
+    let np, nestedPath;
+    for (let path of privatePaths){
+        if(Array.isArray(path)){ // if provided with a nested path, traverse down and delete final entry
+            nestedPath = cleaned;
+            for (let i = 0; i < path.length; i++){
+                np = path[i];    
+                try{
+                    if(i === path.length - 1){  
+                        delete nestedPath[np]
+                    } else {
+                        nestedPath = nestedPath[np]
+                    }
+                } catch(err){ // if a provided key along the path does not exist, inform user
+                    console.error(`Provided key, ["${np}"] does not exist\n\nFull error message reads:\n\n`, err)
+                    break;
+                }
+            }
+        } else {
+            delete cleaned[path];
+        }
+    }
+
+    return cleaned;
+
+}
+
+
+
+// =======================================================================================
 
 const test = {
     layer1_a: {
@@ -77,9 +113,17 @@ const test2 = {
     }
 }
 
-getRoutes(test2).forEach((path, i) => {
-    console.log(`${i}. ${path}`)
-})
+console.time("cleanState")
+console.log(cleanState(test2, [
+    ["comment", "blah", "content", "text"],
+    ["user", "username"]
+]))
+console.timeEnd("cleanState")
+
+
+// getRoutes(test2).forEach((path, i) => {
+//     console.log(`${i}. ${path}`)
+// })
 
 // console.log("\n\n", test2, "\n\n")
 

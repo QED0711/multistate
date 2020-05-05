@@ -127,6 +127,38 @@ const createParamsString = (params = {}) => {
     return str;
 }
 
+const cleanState = (state, privatePaths) => {
+
+    /* 
+    takes a state object and list of private paths as inputs, and returns the state with the private paths removed. 
+    */
+    const cleaned = {...state} // make a copy of state
+    let np, nestedPath;
+    for (let path of privatePaths){
+        if(Array.isArray(path)){ // if provided with a nested path, traverse down and delete final entry
+            nestedPath = cleaned;
+            for (let i = 0; i < path.length; i++){
+                np = path[i];    
+                try{
+                    if(i === path.length - 1){  
+                        delete nestedPath[np]
+                    } else {
+                        nestedPath = nestedPath[np]
+                    }
+                } catch(err){ // if a provided key along the path does not exist, inform user
+                    console.error(`Provided key, ["${path[i - 1]}"] does not exist\n\nFull error message reads:\n\n`, err)
+                    break;
+                }
+            }
+        } else {
+            delete cleaned[path];
+        }
+    }
+
+    return cleaned;
+
+}
+
 const createReducerDispatchers = (reducers) => {
     const reducerMethods = {}
     for (let r in reducers) {
@@ -246,7 +278,7 @@ class Multistate {
             }
         }
 
-        if(!window.name && this.storageOptions.providerWindow) window.name = this.storageOptions.providerWindow
+        if (!window.name && this.storageOptions.providerWindow) window.name = this.storageOptions.providerWindow
 
 
 
@@ -283,11 +315,12 @@ class Multistate {
 
         // initialize local storage with state
         // also check to make sure that any state paths marked as private are removed before setting local storage
-        if(storageOptions.name){
-            const authorizedState = {...state}
-            for(let path of storageOptions.privateStatePaths){
-                delete authorizedState[path]
-            }
+        if (storageOptions.name) {
+            const authorizedState = cleanState(state, storageOptions.privateStatePaths)
+            // const authorizedState = { ...state }
+            // for (let path of storageOptions.privateStatePaths) {
+            //     delete authorizedState[path]
+            // }
             storageOptions.name && localStorage.setItem(storageOptions.name, JSON.stringify(authorizedState))
         }
 
@@ -350,13 +383,14 @@ class Multistate {
                     return new Promise(resolve => {
                         this.setStateMaster(state, () => {
                             // handle local storage updates to state
-                            if(this.bindToLocalStorage){
-                                if(this.storageOptions.privateStatePaths.length && window.name === this.storageOptions.providerWindow){ // if there are any private paths that need to be removed (only proceed if fired from the provider window)
-                                   const authorizedState = {...this.state}                                   
-                                   for(let path of this.storageOptions.privateStatePaths){
-                                       delete authorizedState[path]
-                                       localStorage.setItem(this.storageOptions.name, JSON.stringify(authorizedState))
-                                   } 
+                            if (this.bindToLocalStorage) {
+                                if (this.storageOptions.privateStatePaths.length && window.name === this.storageOptions.providerWindow) { // if there are any private paths that need to be removed (only proceed if fired from the provider window)
+                                    const authorizedState = cleanState(this.state, this.storageOptions.privateStatePaths)
+                                    // const authorizedState = { ...this.state }
+                                    // for (let path of this.storageOptions.privateStatePaths) {
+                                    //     delete authorizedState[path]
+                                    // }
+                                    localStorage.setItem(this.storageOptions.name, JSON.stringify(authorizedState))
                                 } else {
                                     console.log("CALLED NON AUTHORIZED")
                                     localStorage.setItem(this.storageOptions.name, JSON.stringify(this.state))
@@ -406,9 +440,10 @@ class Multistate {
             }
 
             createWindowManager() {
+
                 // storage object for opened child windows
                 this.windows = this.windows || {};
-                
+
                 // window manager methods passed to user
                 const windowManagerMethods = {
                     open(url, name, params = {}) {
@@ -420,33 +455,36 @@ class Multistate {
                         }
                         delete this.windows[name]
                     },
-                    getChildren(){
+                    getChildren() {
                         return this.windows;
                     }
                 }
 
+
+
+
                 // instruct the window what to do when it closes
                 // we define this here, and not up in the multistate class because we need access to all generated child windows
-                if(window.name === storageOptions.providerWindow || storageOptions.removeChildrenOnUnload){
-                    function handleUnload(e){
-                        
+                if (window.name === storageOptions.providerWindow || storageOptions.removeChildrenOnUnload) {
+                    function handleUnload(e) {
+
                         // clear local storage only if specified by user AND the window being closed is the provider window 
-                        if(storageOptions.clearStorageOnUnload && storageOptions.providerWindow === window.name){
+                        if (storageOptions.clearStorageOnUnload && storageOptions.providerWindow === window.name) {
                             localStorage.removeItem(storageOptions.name)
                         }
 
                         // close all children (and grand children) windows if this functionality has been specified by the user
-                        if(storageOptions.removeChildrenOnUnload){
-                            for(let w of Object.keys(this.windows)){
+                        if (storageOptions.removeChildrenOnUnload) {
+                            for (let w of Object.keys(this.windows)) {
                                 this.windows[w].close()
                             }
-                        } 
-    
+                        }
+
                         // return "uncomment to debug unload functionality"
                     }
-    
+
                     handleUnload = handleUnload.bind(this)
-                    
+
                     // set the unload functionality
                     window.onbeforeunload = handleUnload
                     window.onunload = handleUnload
@@ -470,6 +508,19 @@ class Multistate {
                 }
             }
 
+            componentDidUpdate(prevProps, prevState) {
+                Object.entries(this.props).forEach(([key, val]) =>
+                    prevProps[key] !== val && console.log(`Prop '${key}' changed`)
+                );
+                if (this.state) {
+                    Object.entries(this.state).forEach(([key, val]) =>
+                        prevState[key] !== val && console.log(`State '${key}' changed`)
+                    );
+                }
+            }
+
+
+
 
             render() {
                 const value = {
@@ -477,9 +528,9 @@ class Multistate {
                     setters: this.setters,
                     constants: constants,
                     methods: this.methods,
-                    
+
                 }
-                console.log({value})
+                
                 // add reducers with dispatchers
                 if (Object.keys(reducers).length) value.reducers = this.reducersWithDispatchers
 
@@ -495,9 +546,6 @@ class Multistate {
                         this[renameMap[key]] = this[key];
                     }
                 }
-
-
-                console.log("FIRED")
 
                 return (
                     <Context.Provider value={value}>

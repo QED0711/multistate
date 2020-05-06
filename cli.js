@@ -83,13 +83,14 @@ const writeProvider = (name, supportFiles) => {
     let sf;
     for(let sfKey of Object.keys(supportFiles)){
         sf = supportFiles[sfKey]
-        if(sf) supportImports += `const ${sf} = require('./${sf}')\n`
+        // if(sf) supportImports += `const ${sf} = require('./${sf}')\n`
+        if(sf) supportImports += `import ${sf} from './${sf}'\n`
     }
     
     // console.log(supportImports)
 
     const fileContents = `
-const Multistate = require('multistate')
+import Multistate from 'multistate';
 
 ${supportImports}
 
@@ -100,11 +101,10 @@ ${supportFiles.methods ? `${name}.addMethods(${supportFiles.methods})`: ""}
 ${supportFiles.reducers ? `${name}.addReducers(${supportFiles.reducers})`: ""}
 ${supportFiles.constants ? `${name}.addConstants(${supportFiles.constants})`: ""}
 
-module.exports = {
-    ${name}Context: ${name}.context,
-    ${capName(name)}Provider: ${name}.createProvider()
-}
-    `
+export const ${name}Context = ${name}.context;
+export const ${capName(name)}Provider = ${name}.createProvider();
+
+`
     // create state directory if it doesn't exist
     !fs.existsSync("./src/state/") && fs.mkdirSync("./src/state")
 
@@ -155,8 +155,8 @@ const ${supportFile} = {
 
 }
 
-module.exports = ${supportFile}
-    `
+export default ${supportFile};
+`
 }
 
 const capName = (name) => {

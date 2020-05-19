@@ -50,7 +50,7 @@ First, wrap whichever children components you want to have access to the state c
 
 ```
 
-With this this basic setup, you are already provided with a number of useful ways to access and set the state of your multistate instance. As an example using the useContext hook: 
+With this basic setup, you are already provided with a number of useful ways to access and set the state of your multistate instance. As an example using the useContext hook: 
 
 ### Subscribing to the state context
 
@@ -69,17 +69,16 @@ With this this basic setup, you are already provided with a number of useful way
         return (
             <>
                 <button onClick={
-                    e => {setters.setVariable1(state.variable1 + 1)}
+                    async e => {await setters.setVariable1(state.variable1 + 1)}
                 }>
                     Button 1
                 </button>
 
                 <button onClick={
-                    e => {setters.setVariable2(state.variable2 - 1)}
+                    async e => {await setters.setVariable2(state.variable2 - 1)}
                 }>
                     Button 2
                 </button>
-
             </>
         )
     }
@@ -91,7 +90,7 @@ Using destructuring in the above example, we get access to a `state` variable co
 
 In the above example, we have made a basic increment/decrement counter using our state and provided setters. But what if you wanted setter methods called `incrementVariable1` and `decrementVariable2` so you didn't have to hard code the functionality every time? Fortunately, this is quite easy to accomplish with custom setters. 
 
-Like the standard setState pattern of vanilla React, we can define methods that use `setState` to alter the state of a variable (or variables) without changing it directly. However, we then typically have to deal with binding so as to keep the `setState` call in the correct scope. Multistate handles all the background binding for us so we can just tell it what we want out method to do. 
+Like the standard setState pattern of vanilla React, we can define methods that use `setState` to alter the state of a variable (or variables) without changing it directly. However, we then typically have to deal with binding so as to keep the `setState` call in the correct scope. Multistate handles all the background binding for us so we can just tell it what we want our method to do. 
 
 We'll adjust our `myState.js` file as follows:
 
@@ -130,12 +129,12 @@ We'll adjust our `myState.js` file as follows:
     export const MyProvider = myState.createProvider()
 ```
 
-Notice that we are able to access the `this` keyword within our custom setters. `this` is bound to the value of our provider, so we are given access to the state itself through `this.state`. In fact, any value or method that we get when subscribing to the provider is also accessible via the `this` keyword within our custom setters.
+Notice that we are able to access the `this` keyword within our custom setters. `this` becomes bound to the value of our provider, so we are given access to the state itself through `this.state`. In fact, any value or method that we get when subscribing to the provider is also accessible via the `this` keyword within our custom setters.
 
 We'll now update our subscribing component to use our new custom setters.
 
 ```
-    // ExampleChildComponent,js
+    // ExampleChildComponent.js
 
     import React, { useContext } from 'react'
     import { MyContext } from './myState.js'
@@ -152,7 +151,6 @@ We'll now update our subscribing component to use our new custom setters.
                 <button onClick={setters.decrementVariable2}>
                     Button 2
                 </button>
-
             </>
         )
     }
@@ -162,3 +160,12 @@ And with that we have a quick and easy way to implement our own setter logic.
 
 ___
 
+## Initialization Options:
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| dynamicSetters | Boolean | true | specifies if setters should be dynamically generated based on the provided state object |
+| nestedSetters | Boolean | false | Specifies if setters should be dynamically created for nested state values.
+| allowSetterOverwrite | Boolean | true | If true, allows a custom defined setter to overwrite the functionality of a dynamic setter of the same name |
+| developmentWarnings | Boolean | true | if `allowSetterOverwrite` is false, developmentWarnings will warn the developer if they try to overwrite a dynamic setter with custom logic | 
+| overwriteProtectionLevel | Number (0, 1, >= 2) | 1 | if `allowSetterOverwrite` is false, sets the warning type that a developer will get when overwriting a dynamic setter. `0` will silence warnings, `1` print a console.warn message, and 2 or greater will throw an error and halt execution.

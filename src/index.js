@@ -392,7 +392,6 @@ class Multistate {
                                     // }
                                     localStorage.setItem(this.storageOptions.name, JSON.stringify(authorizedState))
                                 } else {
-                                    console.log("CALLED NON AUTHORIZED")
                                     localStorage.setItem(this.storageOptions.name, JSON.stringify(this.state))
                                 }
                             }

@@ -1,4 +1,4 @@
-import React, { createContext, PureComponent } from "react";
+import React, { createContext, PureComponent, useContext, useMemo } from "react";
 
 // const React = require('react')
 // const { createContext, Component } = React
@@ -132,20 +132,20 @@ const cleanState = (state, privatePaths) => {
     /* 
     takes a state object and list of private paths as inputs, and returns the state with the private paths removed. 
     */
-    const cleaned = {...state} // make a copy of state
+    const cleaned = { ...state } // make a copy of state
     let np, nestedPath;
-    for (let path of privatePaths){
-        if(Array.isArray(path)){ // if provided with a nested path, traverse down and delete final entry
+    for (let path of privatePaths) {
+        if (Array.isArray(path)) { // if provided with a nested path, traverse down and delete final entry
             nestedPath = cleaned;
-            for (let i = 0; i < path.length; i++){
-                np = path[i];    
-                try{
-                    if(i === path.length - 1){  
+            for (let i = 0; i < path.length; i++) {
+                np = path[i];
+                try {
+                    if (i === path.length - 1) {
                         delete nestedPath[np]
                     } else {
                         nestedPath = nestedPath[np]
                     }
-                } catch(err){ // if a provided key along the path does not exist, inform user
+                } catch (err) { // if a provided key along the path does not exist, inform user
                     console.error(`Provided key, ["${path[i - 1]}"] does not exist\n\nFull error message reads:\n\n`, err)
                     break;
                 }
@@ -508,14 +508,14 @@ class Multistate {
             }
 
             componentDidUpdate(prevProps, prevState) {
-                Object.entries(this.props).forEach(([key, val]) =>
-                    prevProps[key] !== val && console.log(`Prop '${key}' changed`)
-                );
-                if (this.state) {
-                    Object.entries(this.state).forEach(([key, val]) =>
-                        prevState[key] !== val && console.log(`State '${key}' changed`)
-                    );
-                }
+                // Object.entries(this.props).forEach(([key, val]) =>
+                //     prevProps[key] !== val && console.log(`Prop '${key}' changed`)
+                // );
+                // if (this.state) {
+                //     Object.entries(this.state).forEach(([key, val]) =>
+                //         prevState[key] !== val && console.log(`State '${key}' changed`)
+                //     );
+                // }
             }
 
 
@@ -529,7 +529,7 @@ class Multistate {
                     methods: this.methods,
 
                 }
-                
+
                 // add reducers with dispatchers
                 if (Object.keys(reducers).length) value.reducers = this.reducersWithDispatchers
 
@@ -559,5 +559,61 @@ class Multistate {
     }
 }
 
-module.exports = Multistate;
+export default Multistate;
+
+
+
+
+// ============================ Subscribe ============================
+
+/* 
+contextDependencies = [
+    {context: Context, dependencies: [string names of deps]},
+    ...
+]
+ */
+
+export const subscribe = (Component, contextDependencies) => {
+
+    return (props) => {
+
+        let contexts = {},
+            dependencies = [],
+            nestedDep = null;
+
+        // apply default key value when only 1 context is subscribed to, and no key value given
+        if (contextDependencies.length === 1 && !contextDependencies[0].key) contextDependencies[0].key = "context" 
+
+        contextDependencies.forEach((ctx, i) => {
+
+            ctx.key = ctx.key || `context${i+1}` // if not key value is set, apply default here
+            contexts[ctx.key] = useContext(ctx.context); // assign the entire context object so it can be passed into props
+
+            for (let dep of ctx.dependencies) {
+
+                if(typeof dep === "string"){
+
+                    dependencies.push(contexts[ctx.key].state[dep]) // save just the desired state dependencies
+
+                } else if(Array.isArray(dep)){ // allow for nested dependencies
+                    
+                    nestedDep = contexts[ctx.key].state[dep[0]] 
+                    for(let i = 1; i < dep.length; i++){ // looping from 1 because we have already handled the first step in the nested path
+                        nestedDep = nestedDep[dep[i]]
+                    }
+                    dependencies.push(nestedDep)
+
+                }
+            }
+
+        })
+
+        return useMemo(
+            () => <Component {...props} {...contexts} />,
+            dependencies
+        )
+    }
+
+
+}
 

@@ -576,7 +576,7 @@ contextDependencies = [
 
 export const subscribe = (Component, contextDependencies) => {
 
-    return (props) => {
+    const MultistateSubscriber = (props) => {
 
         let contexts = {},
             dependencies = [],
@@ -614,6 +614,8 @@ export const subscribe = (Component, contextDependencies) => {
             dependencies
         )
     }
+
+    return MultistateSubscriber;
 
 
 }

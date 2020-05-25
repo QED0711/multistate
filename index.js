@@ -757,7 +757,7 @@ contextDependencies = [
 exports["default"] = _default;
 
 var subscribe = function subscribe(Component, contextDependencies) {
-  return function (props) {
+  var MultistateSubscriber = function MultistateSubscriber(props) {
     var contexts = {},
         dependencies = [],
         nestedDep = null; // apply default key value when only 1 context is subscribed to, and no key value given
@@ -799,6 +799,8 @@ var subscribe = function subscribe(Component, contextDependencies) {
       return /*#__PURE__*/_react["default"].createElement(Component, _extends({}, props, contexts));
     }, dependencies);
   };
+
+  return MultistateSubscriber;
 };
 
 exports.subscribe = subscribe;

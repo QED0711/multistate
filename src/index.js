@@ -497,6 +497,7 @@ class Multistate {
             }
 
             componentDidMount() {
+                
                 // When component mounts, if bindToLocalStorage has been set to true, make the window listen for storage change events and update the state 
                 // if the window is already listening for storage events, then do nothing
                 if (bindToLocalStorage && !window.onstorage) {
@@ -520,13 +521,13 @@ class Multistate {
 
 
 
-
             render() {
+
                 const value = {
                     state: this.state,
                     setters: this.setters,
-                    constants: constants,
                     methods: this.methods,
+                    constants,
 
                 }
 

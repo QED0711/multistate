@@ -709,8 +709,8 @@ var Multistate = /*#__PURE__*/function () {
             var value = {
               state: this.state,
               setters: this.setters,
-              constants: constants,
-              methods: this.methods
+              methods: this.methods,
+              constants: constants
             }; // add reducers with dispatchers
 
             if (Object.keys(reducers).length) value.reducers = this.reducersWithDispatchers; // initialize a window manager if within a multi-window state management system

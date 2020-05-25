@@ -1,20 +1,19 @@
 "use strict";
 
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.subscribe = exports["default"] = void 0;
+
 var _react = _interopRequireWildcard(require("react"));
 
 var _this3 = void 0;
 
-function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function _getRequireWildcardCache() { return cache; }; return cache; }
+function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function () { return cache; }; return cache; }
 
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || _typeof(obj) !== "object" && typeof obj !== "function") { return { "default": obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj["default"] = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
 
-function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
-
-function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-
-function _iterableToArrayLimit(arr, i) { if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return; var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
-
-function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+function _extends() { _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; return _extends.apply(this, arguments); }
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
 
@@ -40,7 +39,7 @@ function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try
 
 function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
 
-function _createForOfIteratorHelper(o) { if (typeof Symbol === "undefined" || o[Symbol.iterator] == null) { if (Array.isArray(o) || (o = _unsupportedIterableToArray(o))) { var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e2) { throw _e2; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var it, normalCompletion = true, didErr = false, err; return { s: function s() { it = o[Symbol.iterator](); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e3) { didErr = true; err = _e3; }, f: function f() { try { if (!normalCompletion && it["return"] != null) it["return"](); } finally { if (didErr) throw err; } } }; }
+function _createForOfIteratorHelper(o) { if (typeof Symbol === "undefined" || o[Symbol.iterator] == null) { if (Array.isArray(o) || (o = _unsupportedIterableToArray(o))) { var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var it, normalCompletion = true, didErr = false, err; return { s: function s() { it = o[Symbol.iterator](); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it["return"] != null) it["return"](); } finally { if (didErr) throw err; } } }; }
 
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
 
@@ -581,7 +580,6 @@ var Multistate = /*#__PURE__*/function () {
 
                     localStorage.setItem(_this5.storageOptions.name, JSON.stringify(_authorizedState));
                   } else {
-                    console.log("CALLED NON AUTHORIZED");
                     localStorage.setItem(_this5.storageOptions.name, JSON.stringify(_this5.state));
                   }
                 }
@@ -696,24 +694,14 @@ var Multistate = /*#__PURE__*/function () {
           }
         }, {
           key: "componentDidUpdate",
-          value: function componentDidUpdate(prevProps, prevState) {
-            Object.entries(this.props).forEach(function (_ref5) {
-              var _ref6 = _slicedToArray(_ref5, 2),
-                  key = _ref6[0],
-                  val = _ref6[1];
-
-              return prevProps[key] !== val && console.log("Prop '".concat(key, "' changed"));
-            });
-
-            if (this.state) {
-              Object.entries(this.state).forEach(function (_ref7) {
-                var _ref8 = _slicedToArray(_ref7, 2),
-                    key = _ref8[0],
-                    val = _ref8[1];
-
-                return prevState[key] !== val && console.log("State '".concat(key, "' changed"));
-              });
-            }
+          value: function componentDidUpdate(prevProps, prevState) {// Object.entries(this.props).forEach(([key, val]) =>
+            //     prevProps[key] !== val && console.log(`Prop '${key}' changed`)
+            // );
+            // if (this.state) {
+            //     Object.entries(this.state).forEach(([key, val]) =>
+            //         prevState[key] !== val && console.log(`State '${key}' changed`)
+            //     );
+            // }
           }
         }, {
           key: "render",
@@ -721,8 +709,8 @@ var Multistate = /*#__PURE__*/function () {
             var value = {
               state: this.state,
               setters: this.setters,
-              constants: constants,
-              methods: this.methods
+              methods: this.methods,
+              constants: constants
             }; // add reducers with dispatchers
 
             if (Object.keys(reducers).length) value.reducers = this.reducersWithDispatchers; // initialize a window manager if within a multi-window state management system
@@ -757,4 +745,60 @@ var Multistate = /*#__PURE__*/function () {
   return Multistate;
 }();
 
-module.exports = Multistate;
+var _default = Multistate; // ============================ Subscribe ============================
+
+/* 
+contextDependencies = [
+    {context: Context, dependencies: [string names of deps]},
+    ...
+]
+ */
+
+exports["default"] = _default;
+
+var subscribe = function subscribe(Component, contextDependencies) {
+  return function (props) {
+    var contexts = {},
+        dependencies = [],
+        nestedDep = null; // apply default key value when only 1 context is subscribed to, and no key value given
+
+    if (contextDependencies.length === 1 && !contextDependencies[0].key) contextDependencies[0].key = "context";
+    contextDependencies.forEach(function (ctx, i) {
+      ctx.key = ctx.key || "context".concat(i + 1); // if not key value is set, apply default here
+
+      contexts[ctx.key] = (0, _react.useContext)(ctx.context); // assign the entire context object so it can be passed into props
+
+      var _iterator3 = _createForOfIteratorHelper(ctx.dependencies),
+          _step3;
+
+      try {
+        for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
+          var dep = _step3.value;
+
+          if (typeof dep === "string") {
+            dependencies.push(contexts[ctx.key].state[dep]); // save just the desired state dependencies
+          } else if (Array.isArray(dep)) {
+            // allow for nested dependencies
+            nestedDep = contexts[ctx.key].state[dep[0]];
+
+            for (var _i6 = 1; _i6 < dep.length; _i6++) {
+              // looping from 1 because we have already handled the first step in the nested path
+              nestedDep = nestedDep[dep[_i6]];
+            }
+
+            dependencies.push(nestedDep);
+          }
+        }
+      } catch (err) {
+        _iterator3.e(err);
+      } finally {
+        _iterator3.f();
+      }
+    });
+    return (0, _react.useMemo)(function () {
+      return /*#__PURE__*/_react["default"].createElement(Component, _extends({}, props, contexts));
+    }, dependencies);
+  };
+};
+
+exports.subscribe = subscribe;

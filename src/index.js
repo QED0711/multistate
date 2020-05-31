@@ -569,7 +569,7 @@ export default Multistate;
 
 /* 
 contextDependencies = [
-    {context: Context, dependencies: [string names of deps]},
+    {context: Context, key: string name of context in props, dependencies: [string names of deps]},
     ...
 ]
  */
@@ -608,6 +608,11 @@ export const subscribe = (Component, contextDependencies) => {
             }
 
         })
+
+        // add props to dependencies
+        for (let propKey of Object.keys(props)){
+            dependencies.push(props[propKey])
+        }
 
         return useMemo(
             () => <Component {...props} {...contexts} />,

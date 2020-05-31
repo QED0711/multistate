@@ -749,7 +749,7 @@ var _default = Multistate; // ============================ Subscribe ===========
 
 /* 
 contextDependencies = [
-    {context: Context, dependencies: [string names of deps]},
+    {context: Context, key: string name of context in props, dependencies: [string names of deps]},
     ...
 ]
  */
@@ -794,7 +794,11 @@ var subscribe = function subscribe(Component, contextDependencies) {
       } finally {
         _iterator3.f();
       }
-    });
+    }); // add props to dependencies
+    // for (let propKey of Object.keys(props)){
+    //     dependencies.push(props[propKey])
+    // }
+
     return (0, _react.useMemo)(function () {
       return /*#__PURE__*/_react["default"].createElement(Component, _extends({}, props, contexts));
     }, dependencies);

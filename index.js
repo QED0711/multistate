@@ -458,7 +458,16 @@ var Multistate = /*#__PURE__*/function () {
       this.storageOptions.providerWindow = this.storageOptions.providerWindow || this.storageOptions.name; // if user has specified to load state from local storage (this only impacts the provider window)
 
       if (this.storageOptions.initializeFromLocalStorage) {
-        if (window.localStorage.getItem(this.storageOptions.name)) this.state = JSON.parse(window.localStorage.getItem(this.storageOptions.name));
+        if (window.localStorage.getItem(this.storageOptions.name)) {
+          // if the state has been saved in the local storage
+          if (window.name === this.storageOptions.providerWindow) {
+            // if it's the provider window and the state is being initialized from local storage
+            this.state = _objectSpread({}, this.state, {}, JSON.parse(window.localStorage.getItem(this.storageOptions.name)));
+          } else {
+            // if not the provider window by still being initialized from local storage
+            this.state = JSON.parse(window.localStorage.getItem(this.storageOptions.name));
+          }
+        }
       } // if the window is a subscriber window, automatically initialize from local storage
 
 
@@ -795,9 +804,11 @@ var subscribe = function subscribe(Component, contextDependencies) {
         _iterator3.f();
       }
     }); // add props to dependencies
-    // for (let propKey of Object.keys(props)){
-    //     dependencies.push(props[propKey])
-    // }
+
+    for (var _i7 = 0, _Object$keys6 = Object.keys(props); _i7 < _Object$keys6.length; _i7++) {
+      var propKey = _Object$keys6[_i7];
+      dependencies.push(props[propKey]);
+    }
 
     return (0, _react.useMemo)(function () {
       return /*#__PURE__*/_react["default"].createElement(Component, _extends({}, props, contexts));

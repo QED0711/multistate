@@ -264,7 +264,13 @@ class Multistate {
 
         // if user has specified to load state from local storage (this only impacts the provider window)
         if (this.storageOptions.initializeFromLocalStorage) {
-            if (window.localStorage.getItem(this.storageOptions.name)) this.state = JSON.parse(window.localStorage.getItem(this.storageOptions.name))
+            if (window.localStorage.getItem(this.storageOptions.name)){ // if the state has been saved in the local storage
+                if(window.name === this.storageOptions.providerWindow) { // if it's the provider window and the state is being initialized from local storage
+                    this.state = {...this.state, ...JSON.parse(window.localStorage.getItem(this.storageOptions.name))}
+                } else { // if not the provider window by still being initialized from local storage
+                    this.state = JSON.parse(window.localStorage.getItem(this.storageOptions.name));
+                }
+            } 
         }
 
         // if the window is a subscriber window, automatically initialize from local storage

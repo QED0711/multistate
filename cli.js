@@ -101,7 +101,7 @@ ${supportFiles.methods ? `${name}.addMethods(${supportFiles.methods})`: ""}
 ${supportFiles.reducers ? `${name}.addReducers(${supportFiles.reducers})`: ""}
 ${supportFiles.constants ? `${name}.addConstants(${supportFiles.constants})`: ""}
 
-export const ${name}Context = ${name}.context;
+export const ${capName(name)}Context = ${name}.context;
 export const ${capName(name)}Provider = ${name}.createProvider();
 
 `
@@ -194,11 +194,11 @@ const run = async () => {
     if(noFiles(filesToMake)){
         console.log("\n=== No arguments detected ===")
         console.log("Initializing Setup Wizard")
-        console.log("\nFor each support file listed, provide a name. If you want the default name, just press ENTER. If you do not want to include the support file, type 'n'.\n")
+        console.log("\nFor each support file listed, provide a name. If you want the default name, just press ENTER. If you do not want to include the support file, type '-'.\n")
         let currentFile;
         for(let file of Object.keys(filesToMake)){
             currentFile = await prompt(file + ": ")
-            filesToMake[file] = currentFile.toLowerCase() === "n" ? null : currentFile.length ? currentFile : file
+            filesToMake[file] = currentFile.toLowerCase() === "-" ? null : currentFile.length ? currentFile : file
         }
     }
     

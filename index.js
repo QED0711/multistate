@@ -78,6 +78,8 @@ var bindMethods = function bindMethods(methods, self) {
 };
 
 var formatStateName = function formatStateName(name) {
+  var prefix = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "";
+
   /* 
   Takes an object key (name) as an input, and returns that name capitalized with the word "set" prepended to it.
   If the word already starts with a capital letter (or and underscore _), returns null. 
@@ -86,7 +88,7 @@ var formatStateName = function formatStateName(name) {
   name = name.split("");
   if (name[0] === name[0].toUpperCase()) return null;
   name[0] = name[0].toUpperCase();
-  return "set" + name.join("");
+  return prefix + name.join("");
 };
 
 var getNestedRoutes = function getNestedRoutes(state) {
@@ -149,12 +151,11 @@ var createStateSetters = function createStateSetters(state) {
   /* 
   iterates through a provided state object, and takes each key name (state value) and creates a setter method for that value. 
   Following the standard React convention, a key called "myKey" would get a setter method called "setMyKey".
-   If bindToLocalStorage is truthy, will also add logic to set localStorage items
   */
   var formattedName;
 
   var _loop = function _loop(s) {
-    formattedName = formatStateName(s);
+    formattedName = formatStateName(s, "set");
 
     if (formattedName && !ignoredSetters.includes(s)) {
       setters[formattedName] = /*#__PURE__*/function () {
@@ -295,6 +296,33 @@ var createStateSetters = function createStateSetters(state) {
   return setters;
 };
 
+var createStateGetters = function createStateGetters(state) {
+  var ignoredGetters = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+  var nestedGetters = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+  var getters = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+
+  /* 
+  iterates through a provided state object and creates getter wrapper functions to retrieve the state (rather than grabbing directly from the state object)
+  */
+  var formattedName;
+
+  var _loop3 = function _loop3(s) {
+    formattedName = formatStateName(s, "get");
+
+    if (formattedName && !ignoredGetters.includes(s)) {
+      getters[formattedName] = function () {
+        return this.state[s];
+      };
+    }
+  };
+
+  for (var s in state) {
+    _loop3(s);
+  }
+
+  return getters;
+};
+
 var createParamsString = function createParamsString() {
   var params = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
   var str = "";
@@ -358,7 +386,7 @@ var cleanState = function cleanState(state, privatePaths) {
 var createReducerDispatchers = function createReducerDispatchers(reducers) {
   var reducerMethods = {};
 
-  var _loop3 = function _loop3(r) {
+  var _loop4 = function _loop4(r) {
     // console.log(r)
     reducerMethods[r] = function (state, action) {
       _this3.setState(reducers[r](state, action));
@@ -366,7 +394,7 @@ var createReducerDispatchers = function createReducerDispatchers(reducers) {
   };
 
   for (var r in reducers) {
-    _loop3(r);
+    _loop4(r);
   } // console.log(reducerMethods.stateReducer)
 
 
@@ -400,6 +428,7 @@ var Multistate = /*#__PURE__*/function () {
     this.context = (0, _react.createContext)(null);
     this.state = state;
     this.setters = {};
+    this.getters = {};
     this.reducers = {};
     this.constants = {};
     this.methods = {}; // OPTIONS
@@ -493,21 +522,21 @@ var Multistate = /*#__PURE__*/function () {
       var reducers = this.reducers;
       var methods = this.methods;
       var ignoredSetters = this.ignoredSetters;
+      var ignoredGetters = this.ignoredGetters;
       var renameMap = this.renameMap || {};
       var bindToLocalStorage = this.bindToLocalStorage;
       var storageOptions = this.storageOptions;
-      var setters; // initialize local storage with state
+      var setters, getters; // initialize local storage with state
       // also check to make sure that any state paths marked as private are removed before setting local storage
 
       if (storageOptions.name) {
-        var authorizedState = cleanState(state, storageOptions.privateStatePaths); // const authorizedState = { ...state }
-        // for (let path of storageOptions.privateStatePaths) {
-        //     delete authorizedState[path]
-        // }
-
+        var authorizedState = cleanState(state, storageOptions.privateStatePaths);
         storageOptions.name && localStorage.setItem(storageOptions.name, JSON.stringify(authorizedState));
       } // Pre class definition setup
+      // GETTER CREATION
 
+
+      getters = _objectSpread({}, createStateGetters(state, ignoredGetters, this.nestedGetters), {}, this.getters); // SETTER CREATION
 
       if (this.allowSetterOverwrite) {
         setters = this.dynamicSetters ? _objectSpread({}, createStateSetters(state, ignoredSetters, this.nestedSetters), {}, this.setters) : _objectSpread({}, this.setters);
@@ -547,7 +576,8 @@ var Multistate = /*#__PURE__*/function () {
 
           _this4 = _super.call(this, props);
           _this4.state = state;
-          _this4.setters = bindMethods(setters, _assertThisInitialized(_this4)); // set this.reducers to the reducered added in the multistate Class 
+          _this4.setters = bindMethods(setters, _assertThisInitialized(_this4));
+          _this4.getters = bindMethods(getters, _assertThisInitialized(_this4)); // set this.reducers to the reducered added in the multistate Class 
 
           _this4.reducers = reducers; // bind generatDispatchers
 
@@ -709,6 +739,7 @@ var Multistate = /*#__PURE__*/function () {
             var value = {
               state: this.state,
               setters: this.setters,
+              getters: this.getters,
               methods: this.methods,
               constants: constants
             }; // add reducers with dispatchers
@@ -795,9 +826,11 @@ var subscribe = function subscribe(Component, contextDependencies) {
         _iterator3.f();
       }
     }); // add props to dependencies
-    // for (let propKey of Object.keys(props)){
-    //     dependencies.push(props[propKey])
-    // }
+
+    for (var _i7 = 0, _Object$keys6 = Object.keys(props); _i7 < _Object$keys6.length; _i7++) {
+      var propKey = _Object$keys6[_i7];
+      dependencies.push(props[propKey]);
+    }
 
     return (0, _react.useMemo)(function () {
       return /*#__PURE__*/_react["default"].createElement(Component, _extends({}, props, contexts));

@@ -17,7 +17,7 @@ const bindMethods = (methods, self) => {
 }
 
 
-const formatStateName = (name) => {
+const formatStateName = (name, prefix = "") => {
     /* 
     Takes an object key (name) as an input, and returns that name capitalized with the word "set" prepended to it.
     If the word already starts with a capital letter (or and underscore _), returns null. 
@@ -29,7 +29,7 @@ const formatStateName = (name) => {
     if (name[0] === name[0].toUpperCase()) return null;
 
     name[0] = name[0].toUpperCase()
-    return "set" + name.join("");
+    return prefix + name.join("");
 }
 
 const getNestedRoutes = (state) => {
@@ -79,13 +79,11 @@ const createStateSetters = (state, ignoredSetters = [], nestedSetters = false, s
     /* 
     iterates through a provided state object, and takes each key name (state value) and creates a setter method for that value. 
     Following the standard React convention, a key called "myKey" would get a setter method called "setMyKey".
-
-    If bindToLocalStorage is truthy, will also add logic to set localStorage items
     */
 
     let formattedName;
     for (let s in state) {
-        formattedName = formatStateName(s);
+        formattedName = formatStateName(s, "set");
 
         if (formattedName && !ignoredSetters.includes(s)) {
             setters[formattedName] = async function (value) {
@@ -117,6 +115,23 @@ const createStateSetters = (state, ignoredSetters = [], nestedSetters = false, s
     }
 
     return setters;
+}
+
+const createStateGetters = (state, ignoredGetters = [], nestedGetters = false, getters = {}) => {
+    /* 
+    iterates through a provided state object and creates getter wrapper functions to retrieve the state (rather than grabbing directly from the state object)
+    */
+    let formattedName;
+    for (let s in state) {
+        formattedName = formatStateName(s, "get");
+        if (formattedName && !ignoredGetters.includes(s)) {
+            getters[formattedName] = function () {
+                return this.state[s]
+            }
+        }
+    }
+
+    return getters
 }
 
 const createParamsString = (params = {}) => {
@@ -205,6 +220,7 @@ class Multistate {
         this.state = state;
 
         this.setters = {};
+        this.getters = {};
         this.reducers = {};
         this.constants = {}
         this.methods = {}
@@ -233,6 +249,10 @@ class Multistate {
 
     ignoreSetters(settersArr) {
         this.ignoredSetters = settersArr || []
+    }
+
+    addCustomGetters(getters) {
+        this.getters = getters
     }
 
     addReducers(reducers) {
@@ -307,25 +327,28 @@ class Multistate {
         let reducers = this.reducers
         let methods = this.methods;
         let ignoredSetters = this.ignoredSetters;
+        let ignoredGetters = this.ignoredGetters;
         let renameMap = this.renameMap || {}
 
         const bindToLocalStorage = this.bindToLocalStorage;
         const storageOptions = this.storageOptions
-        let setters;
+        let setters,
+            getters;
 
         // initialize local storage with state
         // also check to make sure that any state paths marked as private are removed before setting local storage
         if (storageOptions.name) {
             const authorizedState = cleanState(state, storageOptions.privateStatePaths)
-            // const authorizedState = { ...state }
-            // for (let path of storageOptions.privateStatePaths) {
-            //     delete authorizedState[path]
-            // }
             storageOptions.name && localStorage.setItem(storageOptions.name, JSON.stringify(authorizedState))
         }
 
 
         // Pre class definition setup
+
+        // GETTER CREATION
+        getters = {...createStateGetters(state, ignoredGetters, this.nestedGetters), ...this.getters}
+        
+        // SETTER CREATION
         if (this.allowSetterOverwrite) {
             setters = this.dynamicSetters ? { ...createStateSetters(state, ignoredSetters, this.nestedSetters), ...this.setters } : { ...this.setters };
         } else {
@@ -359,6 +382,7 @@ class Multistate {
                 super(props);
                 this.state = state
                 this.setters = bindMethods(setters, this);
+                this.getters = bindMethods(getters, this);
 
                 // set this.reducers to the reducered added in the multistate Class 
                 this.reducers = reducers
@@ -497,7 +521,7 @@ class Multistate {
             }
 
             componentDidMount() {
-                
+
                 // When component mounts, if bindToLocalStorage has been set to true, make the window listen for storage change events and update the state 
                 // if the window is already listening for storage events, then do nothing
                 if (bindToLocalStorage && !window.onstorage) {
@@ -526,6 +550,7 @@ class Multistate {
                 const value = {
                     state: this.state,
                     setters: this.setters,
+                    getters: this.getters,
                     methods: this.methods,
                     constants,
 
@@ -583,23 +608,23 @@ export const subscribe = (Component, contextDependencies) => {
             nestedDep = null;
 
         // apply default key value when only 1 context is subscribed to, and no key value given
-        if (contextDependencies.length === 1 && !contextDependencies[0].key) contextDependencies[0].key = "context" 
+        if (contextDependencies.length === 1 && !contextDependencies[0].key) contextDependencies[0].key = "context"
 
         contextDependencies.forEach((ctx, i) => {
 
-            ctx.key = ctx.key || `context${i+1}` // if not key value is set, apply default here
+            ctx.key = ctx.key || `context${i + 1}` // if not key value is set, apply default here
             contexts[ctx.key] = useContext(ctx.context); // assign the entire context object so it can be passed into props
 
             for (let dep of ctx.dependencies) {
 
-                if(typeof dep === "string"){
+                if (typeof dep === "string") {
 
                     dependencies.push(contexts[ctx.key].state[dep]) // save just the desired state dependencies
 
-                } else if(Array.isArray(dep)){ // allow for nested dependencies
-                    
-                    nestedDep = contexts[ctx.key].state[dep[0]] 
-                    for(let i = 1; i < dep.length; i++){ // looping from 1 because we have already handled the first step in the nested path
+                } else if (Array.isArray(dep)) { // allow for nested dependencies
+
+                    nestedDep = contexts[ctx.key].state[dep[0]]
+                    for (let i = 1; i < dep.length; i++) { // looping from 1 because we have already handled the first step in the nested path
                         nestedDep = nestedDep[dep[i]]
                     }
                     dependencies.push(nestedDep)
@@ -610,7 +635,7 @@ export const subscribe = (Component, contextDependencies) => {
         })
 
         // add props to dependencies
-        for (let propKey of Object.keys(props)){
+        for (let propKey of Object.keys(props)) {
             dependencies.push(props[propKey])
         }
 

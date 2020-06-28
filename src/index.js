@@ -75,15 +75,15 @@ const nestedSetterFactory = (state, nsPath) => (newValue) => {
 }
 
 const getNestedValue = (state, nsPath) => {
-    let copy = {...state},
+    let copy = { ...state },
         currentPath = copy,
         key;
 
-    for (let i = 0; i < nsPath.length; i++){
+    for (let i = 0; i < nsPath.length; i++) {
         key = nsPath[i]
-        if(i === nsPath.length -1){ // we have reached the desired nested level
+        if (i === nsPath.length - 1) { // we have reached the desired nested level
             return currentPath[key]
-        } 
+        }
         currentPath = currentPath[key]
     }
 }
@@ -144,9 +144,9 @@ const createStateGetters = (state, ignoredGetters = [], nestedGetters = true, ge
             }
         }
     }
-    
+
     // handle creation of nested getters
-    if(nestedGetters){
+    if (nestedGetters) {
         const nestedPaths = getNestedRoutes(state);
         let nestedName;
         for (let nsPath of nestedPaths) {
@@ -159,7 +159,7 @@ const createStateGetters = (state, ignoredGetters = [], nestedGetters = true, ge
             }
         }
     }
-    
+
     return getters
 }
 
@@ -224,6 +224,7 @@ const createReducerDispatchers = (reducers) => {
 
 const DEFAULT_OPTIONS = {
     dynamicSetters: true,
+    dynamicGetters: true,
     allowSetterOverwrite: true,
     developmentWarnings: true,
     overwriteProtectionLevel: 1,
@@ -259,6 +260,7 @@ class Multistate {
         this.options = { ...DEFAULT_OPTIONS, ...options }
 
         this.dynamicSetters = this.options.dynamicSetters
+        this.dynamicGetters = this.options.dynamicGetters
         this.allowSetterOverwrite = this.options.allowSetterOverwrite
         this.developmentWarnings = this.options.developmentWarnings
         this.overwriteProtectionLevel = this.options.overwriteProtectionLevel
@@ -285,7 +287,7 @@ class Multistate {
         this.getters = getters
     }
 
-    ignoreGetters(gettersArr){
+    ignoreGetters(gettersArr) {
         this.ignoredGetters = gettersArr || []
     }
 
@@ -380,8 +382,8 @@ class Multistate {
         // Pre class definition setup
 
         // GETTER CREATION
-        getters = {...createStateGetters(state, ignoredGetters, this.nestedGetters), ...this.getters}
-        
+        getters = this.dynamicGetters ? { ...createStateGetters(state, ignoredGetters, this.nestedGetters), ...this.getters } : { ...this.getters }
+
         // SETTER CREATION
         if (this.allowSetterOverwrite) {
             setters = this.dynamicSetters ? { ...createStateSetters(state, ignoredSetters, this.nestedSetters), ...this.setters } : { ...this.setters };

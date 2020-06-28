@@ -452,6 +452,7 @@ var createReducerDispatchers = function createReducerDispatchers(reducers) {
 
 var DEFAULT_OPTIONS = {
   dynamicSetters: true,
+  dynamicGetters: true,
   allowSetterOverwrite: true,
   developmentWarnings: true,
   overwriteProtectionLevel: 1,
@@ -484,6 +485,7 @@ var Multistate = /*#__PURE__*/function () {
 
     this.options = _objectSpread({}, DEFAULT_OPTIONS, {}, options);
     this.dynamicSetters = this.options.dynamicSetters;
+    this.dynamicGetters = this.options.dynamicGetters;
     this.allowSetterOverwrite = this.options.allowSetterOverwrite;
     this.developmentWarnings = this.options.developmentWarnings;
     this.overwriteProtectionLevel = this.options.overwriteProtectionLevel;
@@ -595,7 +597,7 @@ var Multistate = /*#__PURE__*/function () {
       // GETTER CREATION
 
 
-      getters = _objectSpread({}, createStateGetters(state, ignoredGetters, this.nestedGetters), {}, this.getters); // SETTER CREATION
+      getters = this.dynamicGetters ? _objectSpread({}, createStateGetters(state, ignoredGetters, this.nestedGetters), {}, this.getters) : _objectSpread({}, this.getters); // SETTER CREATION
 
       if (this.allowSetterOverwrite) {
         setters = this.dynamicSetters ? _objectSpread({}, createStateSetters(state, ignoredSetters, this.nestedSetters), {}, this.setters) : _objectSpread({}, this.setters);

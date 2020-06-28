@@ -173,15 +173,40 @@ ___
 | overwriteProtectionLevel | Number (0, 1, >= 2) | 1 | if `allowSetterOverwrite` is false, sets the warning type that a developer will get when overwriting a dynamic setter. `0` will silence warnings, `1` print a console.warn message, and 2 or greater will throw an error and halt execution. |
 
 ___
+## Connecting to Local Storage
+
+You can easily connect your entire state, or selected parts of your state to the browser's local storage for persistance, or to share with child windows spawned from the parent window. 
+
+```
+// initialize a new multistate instance and call it "main"
+const main = new Multistate({value1: 1, value2: 2})
+
+// connect your multistate instance to localStorage
+main.connectToLocalStorage({
+    name: "main", // this is a required parameter
+    providerWindow: "mainWindow",
+    subscriberWindows: ["child", "grandchild"]
+    removeChildrenOnUnload: true,
+    clearStorageOnUnload: false,
+    privateStatePaths: ["value1"]
+})
+```
+For the second step in the above code example, we connect our multistate instance to our local storage, and set a number of parameters for how it will behave. Those parameters are explained in more detail in the table below, but one very important parameter to remember is `name`. You must provide a unique name in this field.
 
 ## Multiwindow Support Options
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
 | name | String (required) | null | A string that is unique from any other `localStorage` key name (including any other names set in other multistate instances). This will become the key name under which the state is stored in `localStorage`. | 
-| initializeFromLocalStorage | Boolean | false | Specifies if the state should be loaded from the `localStorage` rather than with the default initialization values. Note that if the `localStorage` does not contain a reference to the state, default values will be loaded. | 
+| initializeFromLocalStorage | Boolean | false | Specifies if the state should be loaded from the `localStorage` rather than with the default initialization values. Note that if the `localStorage` does not contain a reference to the state, default values will be loaded. Regardless of what value is set here, windows with names provided in the `subscriberWindows` parameter will initialize from localStorage. | 
 | providerWindow | String | null | Specifies the `window.name` property of the parent window. If no value is given, it will default to the same string specified in the `name` option. | 
-| subscriberWindows | [String] | Empty Array | An array of strings that has a comprehensive list of the names of the windows that may subscribe to the shared state through `localStorage`. | 
+| subscriberWindows | [String] | Empty Array | An array of strings that has a comprehensive list of the names of the windows that may subscribe to the shared state through `localStorage`. These windows will automatically initialize from localStorage regardless of the value set in `initializeFromLocalStorage`| 
 | removeChildrenOnUnload | Boolean | true | If true, will close all children windows spawned from the `windowManager.open` method. Note that if a child window spawns another window (grandchild), that window will also be closed if this parameter is set to true. |
 | clearStorageOnUnload | Boolean | true | If true, when the `providerWindow` is closed, all associated state stored in `localStorage` will be removed. |
 | privateStatePaths | [String or [String]] | Empty Array | Specifies state parameters of the provider window that will not be passed down to any spawned children or grandchildren. Elements in the array may be strings or arrays of strings. The latter options allows for you to specify a nested parameter as private while still passing parameters higher in the state structure. |
+
+## Persisting with Local Storage
+
+While many of the options that you set in `connectToLocalStorage` are aimed at providing functionality for sharing state between multiple windows, you can forgo many of them for clean and easy *persistance on page reload* functionality. If you set `initializeFromLocalStorage` to true, your main/provider window will load default state values from those specified in the local storage. If this is the desried functionality, make sure to also set `clearStorageOnUnload` to false, so the local storage persists if you reload the page. 
+
+If there are some state values that you wish not to initialize from local storage, you can set them in the `privateStatePaths` parameter. Any value indicated in this parameter will not ever be saved to local storage. If you are initialize from a persisted local storage, and have private state values specified, those values will initialize to whatever you have set in your default state settings. 

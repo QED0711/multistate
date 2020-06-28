@@ -74,6 +74,20 @@ const nestedSetterFactory = (state, nsPath) => (newValue) => {
     return copy
 }
 
+const getNestedValue = (state, nsPath) => {
+    let copy = {...state},
+        currentPath = copy,
+        key;
+
+    for (let i = 0; i < nsPath.length; i++){
+        key = nsPath[i]
+        if(i === nsPath.length -1){ // we have reached the desired nested level
+            return currentPath[key]
+        } 
+        currentPath = currentPath[key]
+    }
+}
+
 
 const createStateSetters = (state, ignoredSetters = [], nestedSetters = false, setters = {}) => {
     /* 
@@ -117,7 +131,7 @@ const createStateSetters = (state, ignoredSetters = [], nestedSetters = false, s
     return setters;
 }
 
-const createStateGetters = (state, ignoredGetters = [], nestedGetters = false, getters = {}) => {
+const createStateGetters = (state, ignoredGetters = [], nestedGetters = true, getters = {}) => {
     /* 
     iterates through a provided state object and creates getter wrapper functions to retrieve the state (rather than grabbing directly from the state object)
     */
@@ -130,7 +144,22 @@ const createStateGetters = (state, ignoredGetters = [], nestedGetters = false, g
             }
         }
     }
-
+    
+    // handle creation of nested getters
+    if(nestedGetters){
+        const nestedPaths = getNestedRoutes(state);
+        let nestedName;
+        for (let nsPath of nestedPaths) {
+            nestedName = nsPath.join("_");
+            formattedName = formatStateName(nestedName, "get")
+            if (formattedName && !ignoredGetters.includes(nestedName)) {
+                getters[formattedName] = function () {
+                    return getNestedValue(this.state, nsPath)
+                }
+            }
+        }
+    }
+    
     return getters
 }
 
@@ -198,7 +227,8 @@ const DEFAULT_OPTIONS = {
     allowSetterOverwrite: true,
     developmentWarnings: true,
     overwriteProtectionLevel: 1,
-    nestedSetters: false
+    nestedSetters: false,
+    nestedGetters: true
 }
 
 const DEFAULT_STORAGE_OPTIONS = {
@@ -253,6 +283,10 @@ class Multistate {
 
     addCustomGetters(getters) {
         this.getters = getters
+    }
+
+    ignoreGetters(gettersArr){
+        this.ignoredGetters = gettersArr || []
     }
 
     addReducers(reducers) {

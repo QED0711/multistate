@@ -143,6 +143,23 @@ var nestedSetterFactory = function nestedSetterFactory(state, nsPath) {
   };
 };
 
+var getNestedValue = function getNestedValue(state, nsPath) {
+  var copy = _objectSpread({}, state),
+      currentPath = copy,
+      key;
+
+  for (var i = 0; i < nsPath.length; i++) {
+    key = nsPath[i];
+
+    if (i === nsPath.length - 1) {
+      // we have reached the desired nested level
+      return currentPath[key];
+    }
+
+    currentPath = currentPath[key];
+  }
+};
+
 var createStateSetters = function createStateSetters(state) {
   var ignoredSetters = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
   var nestedSetters = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
@@ -298,7 +315,7 @@ var createStateSetters = function createStateSetters(state) {
 
 var createStateGetters = function createStateGetters(state) {
   var ignoredGetters = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
-  var nestedGetters = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+  var nestedGetters = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
   var getters = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
 
   /* 
@@ -318,6 +335,37 @@ var createStateGetters = function createStateGetters(state) {
 
   for (var s in state) {
     _loop3(s);
+  } // handle creation of nested getters
+
+
+  if (nestedGetters) {
+    var nestedPaths = getNestedRoutes(state);
+    var nestedName;
+
+    var _iterator2 = _createForOfIteratorHelper(nestedPaths),
+        _step2;
+
+    try {
+      var _loop4 = function _loop4() {
+        var nsPath = _step2.value;
+        nestedName = nsPath.join("_");
+        formattedName = formatStateName(nestedName, "get");
+
+        if (formattedName && !ignoredGetters.includes(nestedName)) {
+          getters[formattedName] = function () {
+            return getNestedValue(this.state, nsPath);
+          };
+        }
+      };
+
+      for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+        _loop4();
+      }
+    } catch (err) {
+      _iterator2.e(err);
+    } finally {
+      _iterator2.f();
+    }
   }
 
   return getters;
@@ -344,12 +392,12 @@ var cleanState = function cleanState(state, privatePaths) {
 
   var np, nestedPath;
 
-  var _iterator2 = _createForOfIteratorHelper(privatePaths),
-      _step2;
+  var _iterator3 = _createForOfIteratorHelper(privatePaths),
+      _step3;
 
   try {
-    for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
-      var path = _step2.value;
+    for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
+      var path = _step3.value;
 
       if (Array.isArray(path)) {
         // if provided with a nested path, traverse down and delete final entry
@@ -375,9 +423,9 @@ var cleanState = function cleanState(state, privatePaths) {
       }
     }
   } catch (err) {
-    _iterator2.e(err);
+    _iterator3.e(err);
   } finally {
-    _iterator2.f();
+    _iterator3.f();
   }
 
   return cleaned;
@@ -386,7 +434,7 @@ var cleanState = function cleanState(state, privatePaths) {
 var createReducerDispatchers = function createReducerDispatchers(reducers) {
   var reducerMethods = {};
 
-  var _loop4 = function _loop4(r) {
+  var _loop5 = function _loop5(r) {
     // console.log(r)
     reducerMethods[r] = function (state, action) {
       _this3.setState(reducers[r](state, action));
@@ -394,7 +442,7 @@ var createReducerDispatchers = function createReducerDispatchers(reducers) {
   };
 
   for (var r in reducers) {
-    _loop4(r);
+    _loop5(r);
   } // console.log(reducerMethods.stateReducer)
 
 
@@ -407,7 +455,8 @@ var DEFAULT_OPTIONS = {
   allowSetterOverwrite: true,
   developmentWarnings: true,
   overwriteProtectionLevel: 1,
-  nestedSetters: false
+  nestedSetters: false,
+  nestedGetters: true
 };
 var DEFAULT_STORAGE_OPTIONS = {
   name: null,
@@ -454,6 +503,16 @@ var Multistate = /*#__PURE__*/function () {
     key: "ignoreSetters",
     value: function ignoreSetters(settersArr) {
       this.ignoredSetters = settersArr || [];
+    }
+  }, {
+    key: "addCustomGetters",
+    value: function addCustomGetters(getters) {
+      this.getters = getters;
+    }
+  }, {
+    key: "ignoreGetters",
+    value: function ignoreGetters(gettersArr) {
+      this.ignoredGetters = gettersArr || [];
     }
   }, {
     key: "addReducers",
@@ -799,12 +858,12 @@ var subscribe = function subscribe(Component, contextDependencies) {
 
       contexts[ctx.key] = (0, _react.useContext)(ctx.context); // assign the entire context object so it can be passed into props
 
-      var _iterator3 = _createForOfIteratorHelper(ctx.dependencies),
-          _step3;
+      var _iterator4 = _createForOfIteratorHelper(ctx.dependencies),
+          _step4;
 
       try {
-        for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
-          var dep = _step3.value;
+        for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
+          var dep = _step4.value;
 
           if (typeof dep === "string") {
             dependencies.push(contexts[ctx.key].state[dep]); // save just the desired state dependencies
@@ -821,9 +880,9 @@ var subscribe = function subscribe(Component, contextDependencies) {
           }
         }
       } catch (err) {
-        _iterator3.e(err);
+        _iterator4.e(err);
       } finally {
-        _iterator3.f();
+        _iterator4.f();
       }
     }); // add props to dependencies
 

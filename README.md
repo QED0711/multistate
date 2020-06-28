@@ -165,7 +165,9 @@ ___
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
 | dynamicSetters | Boolean | true | specifies if setters should be dynamically generated based on the provided state object. |
+| dynamicGetters | Boolean | true | specifies if getters should be dynamically generated based on the provided state object. |
 | nestedSetters | Boolean | false | Specifies if setters should be dynamically created for nested state values.
+| nestedGetters | Boolean | true | Specifies if getters should be dynamically created for nested state values.
 | allowSetterOverwrite | Boolean | true | If true, allows a custom defined setter to overwrite the functionality of a dynamic setter of the same name. |
 | developmentWarnings | Boolean | true | if `allowSetterOverwrite` is false, developmentWarnings will warn the developer if they try to overwrite a dynamic setter with custom logic. | 
 | overwriteProtectionLevel | Number (0, 1, >= 2) | 1 | if `allowSetterOverwrite` is false, sets the warning type that a developer will get when overwriting a dynamic setter. `0` will silence warnings, `1` print a console.warn message, and 2 or greater will throw an error and halt execution. |

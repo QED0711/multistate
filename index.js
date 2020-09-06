@@ -176,17 +176,24 @@ var createStateSetters = function createStateSetters(state) {
 
     if (formattedName && !ignoredSetters.includes(s)) {
       setters[formattedName] = /*#__PURE__*/function () {
-        var _ref3 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4(value) {
+        var _ref3 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5(value) {
           var _this2 = this;
 
-          var newState;
-          return regeneratorRuntime.wrap(function _callee4$(_context4) {
+          var cb,
+              newState,
+              _args5 = arguments;
+          return regeneratorRuntime.wrap(function _callee5$(_context5) {
             while (1) {
-              switch (_context4.prev = _context4.next) {
+              switch (_context5.prev = _context5.next) {
                 case 0:
-                  newState = {};
-                  newState[s] = value;
-                  return _context4.abrupt("return", new Promise( /*#__PURE__*/function () {
+                  cb = _args5.length > 1 && _args5[1] !== undefined ? _args5[1] : function () {};
+
+                  if (!(typeof value === "function")) {
+                    _context5.next = 5;
+                    break;
+                  }
+
+                  return _context5.abrupt("return", new Promise( /*#__PURE__*/function () {
                     var _ref4 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(resolve) {
                       return regeneratorRuntime.wrap(function _callee3$(_context3) {
                         while (1) {
@@ -194,7 +201,7 @@ var createStateSetters = function createStateSetters(state) {
                             case 0:
                               _context3.t0 = resolve;
                               _context3.next = 3;
-                              return _this2.setState(newState);
+                              return _this2.setState(value, cb);
 
                             case 3:
                               _context3.t1 = _context3.sent;
@@ -213,12 +220,42 @@ var createStateSetters = function createStateSetters(state) {
                     };
                   }()));
 
-                case 3:
+                case 5:
+                  newState = {};
+                  newState[s] = value;
+                  return _context5.abrupt("return", new Promise( /*#__PURE__*/function () {
+                    var _ref5 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4(resolve) {
+                      return regeneratorRuntime.wrap(function _callee4$(_context4) {
+                        while (1) {
+                          switch (_context4.prev = _context4.next) {
+                            case 0:
+                              _context4.t0 = resolve;
+                              _context4.next = 3;
+                              return _this2.setState(newState, cb);
+
+                            case 3:
+                              _context4.t1 = _context4.sent;
+                              (0, _context4.t0)(_context4.t1);
+
+                            case 5:
+                            case "end":
+                              return _context4.stop();
+                          }
+                        }
+                      }, _callee4);
+                    }));
+
+                    return function (_x5) {
+                      return _ref5.apply(this, arguments);
+                    };
+                  }()));
+
+                case 8:
                 case "end":
-                  return _context4.stop();
+                  return _context5.stop();
               }
             }
-          }, _callee4);
+          }, _callee5);
         }));
 
         return function (_x3) {
@@ -467,7 +504,7 @@ var DEFAULT_STORAGE_OPTIONS = {
   removeChildrenOnUnload: true,
   clearStorageOnUnload: true,
   privateStatePaths: []
-}; // ========================== multistate CLASS ==========================
+}; // ========================== MULTISTATE CLASS ==========================
 
 var Multistate = /*#__PURE__*/function () {
   function Multistate(state) {
@@ -638,9 +675,9 @@ var Multistate = /*#__PURE__*/function () {
           _this4 = _super.call(this, props);
           _this4.state = state;
           _this4.setters = bindMethods(setters, _assertThisInitialized(_this4));
-          _this4.getters = bindMethods(getters, _assertThisInitialized(_this4)); // set this.reducers to the reducered added in the multistate Class 
+          _this4.getters = bindMethods(getters, _assertThisInitialized(_this4)); // set this.reducers to the reducers added in the multistate Class 
 
-          _this4.reducers = reducers; // bind generatDispatchers
+          _this4.reducers = reducers; // bind generateDispatchers
 
           _this4.generateDispatchers = _this4.generateDispatchers.bind(_assertThisInitialized(_this4)); // Create reducers that are copies in name of the previously added reducers
           // Then, give a dispatch method to each that will execute the actual reducer

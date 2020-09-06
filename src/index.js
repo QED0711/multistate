@@ -100,12 +100,18 @@ const createStateSetters = (state, ignoredSetters = [], nestedSetters = false, s
         formattedName = formatStateName(s, "set");
 
         if (formattedName && !ignoredSetters.includes(s)) {
-            setters[formattedName] = async function (value) {
-                const newState = {}
-                newState[s] = value;
-                return new Promise(async resolve => {
-                    resolve(await this.setState(newState))
-                })
+            setters[formattedName] = async function (value, cb = () => {}) {
+                if(typeof value === "function"){
+                    return new Promise(async resolve => {
+                        resolve(await this.setState(value, cb))
+                    })
+                } else {
+                    const newState = {}
+                    newState[s] = value;
+                    return new Promise(async resolve => {
+                        resolve(await this.setState(newState, cb))
+                    })
+                }
             }
         }
     }
@@ -243,7 +249,7 @@ const DEFAULT_STORAGE_OPTIONS = {
 }
 
 
-// ========================== multistate CLASS ==========================
+// ========================== MULTISTATE CLASS ==========================
 
 class Multistate {
     constructor(state, options = {}) {
@@ -420,9 +426,9 @@ class Multistate {
                 this.setters = bindMethods(setters, this);
                 this.getters = bindMethods(getters, this);
 
-                // set this.reducers to the reducered added in the multistate Class 
+                // set this.reducers to the reducers added in the multistate Class 
                 this.reducers = reducers
-                // bind generatDispatchers
+                // bind generateDispatchers
                 this.generateDispatchers = this.generateDispatchers.bind(this);
                 // Create reducers that are copies in name of the previously added reducers
                 // Then, give a dispatch method to each that will execute the actual reducer
